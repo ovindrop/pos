@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>POS Ovindrop Cyanotype</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root{ --radius:10px; --muted:#666; --accent:#1890ff; }
+    body{ font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:16px; background:#f6f7fb; color:#111; }
+    header{ display:flex; align-items:center; justify-content: space-between; gap:12px; margin-bottom:12px; }
+    header h1{ font-size:18px; margin:0; }
+    main{ display:grid; grid-template-columns: 1fr 420px; gap:20px; }
+    @media (max-width:980px){ main{ grid-template-columns: 1fr; } }
+
+    /* product grid */
+    #productCategories .category { background:#fff; padding:14px; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.04); margin-bottom:12px; }
+    #productCategories .category h2{ margin:0 0 10px 0; font-size:16px; border-bottom:1px solid #eee; padding-bottom:8px; }
+    .grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+    .item{ background:#fff; border:1px solid #e6eef9; border-radius:10px; padding:12px; text-align:center; cursor:pointer; transition:all .12s; }
+    .item:hover{ transform:translateY(-4px); box-shadow:0 6px 18px rgba(25,50,100,.06); border-color:var(--accent); }
+    .item img{ width:56px; height:56px; object-fit:contain; margin-bottom:8px; }
+    .item .label{ font-weight:600; margin-bottom:6px; }
+    .item .price{ color:var(--muted); font-size:13px; }
+
+    /* cart panel */
+    .card{ background:#fff; padding:14px; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.04); }
+    .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .cart-header h2 { margin: 0; }
+
+    .channel-buttons { display: flex; gap: 8px; margin-bottom: 10px; }
+    .channel-button { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: #f0f0f0; cursor: pointer; }
+    .channel-button.active { background: #1890ff; color: #fff; border-color: #1890ff; }
+    
+    table{ width:100%; border-collapse:collapse; table-layout: fixed; }
+    th,td{ padding:8px 10px; border-bottom:1px solid #f0f0f0; text-align:center; vertical-align:middle; }
+    th:first-child, td:first-child { text-align: left; }
+    
+    thead th{ background:#fafbfd; text-transform:uppercase; font-size:12px; color:var(--muted); }
+    td.center{ text-align:center; }
+    
+    .btn-small{ padding:6px 8px; border-radius:6px; border:1px solid #ddd; background:#fff; cursor:pointer; }
+    .btn-plus{ background:#e6f7ff; border-color:var(--accent); color:var(--accent); }
+    .btn-minus{ background:#fff0f0; border-color:#f5c2c2; color:#b40000; }
+    .btn-remove{ background:#ffebe6; border-color:#ff7b74; color:#b40000; padding:6px 8px; border-radius:6px; }
+    
+    /* แก้ไขปัญหาคอลัมน์ขยับ */
+    #cartTable thead th:nth-child(1) { width: 45%; }
+    #cartTable thead th:nth-child(2) { width: 15%; }
+    #cartTable thead th:nth-child(3) { width: 25%; }
+    #cartTable thead th:nth-child(4) { width: 15%; }
+    #cartTable td:first-child { font-size: 0.85rem; }
+    
+    .qty-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+    }
+    .qty-display {
+        padding: 0 4px;
+        width: 15px;
+        text-align: center;
+    }
+    .action-row {
+      text-align: right;
+    }
+    
+    /* แก้ไขส่วนนี้: ลบ border-bottom ทั้งหมดออกจากแถวควบคุม */
+    .action-row td {
+      border-bottom: none !important;
+      padding-top: 0;
+    }
+    
+    /* และลบ border-bottom ออกจาก td ที่เป็นรายการสินค้าด้วย */
+    #cartTable tr:not(.action-row) td {
+      border-bottom: none;
+    }
+
+    .cart-footer{ display:flex; flex-direction: column; gap:12px; margin-top:12px; }
+    .total-summary{ display: flex; flex-direction: column; gap: 8px; font-weight: 700; align-self: flex-end; }
+    .total-summary div { display: flex; justify-content: space-between; gap: 20px; }
+    .total-summary .final-total { font-size: 1em; border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px; }
+    .total-summary .subtotal-display, .total-summary .final-total-display { font-size: 1em; }
+    .confirm-wrap{ display:flex; justify-content:flex-end; width:100%; }
+    .confirm{ background:#0a7b33; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
+    .confirm:active{ transform:translateY(1px); }
+    
+    .muted{ color:var(--muted); font-size:13px; }
+    .small{ font-size:13px; color:var(--muted); }
+    
+    .header-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    /* Modals */
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+    .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 10px; }
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+    .close:hover, .close:focus { color: black; text-decoration: none; cursor: pointer; }
+
+    /* History Modal */
+    .history-item { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+    .history-item h3 { margin: 0; font-size: 16px; }
+    .history-item ul { list-style: none; padding: 0; margin: 0; }
+    .history-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .history-footer button { margin-left: 10px; }
+    
+    /* Clear Confirmation Modal */
+    #clearConfirmModal .modal-content {
+      text-align: center;
+    }
+    #clearConfirmModal .modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn-save-data {
+      background-color: #1890ff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-confirm-clear {
+      background-color: #b40000;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    /* Edit Products Modal */
+    #editProductsModal .modal-content {
+        max-height: 90vh; /* Limits the height of the modal */
+        display: flex;
+        flex-direction: column;
+    }
+    #editProductsScroll {
+        overflow-y: auto; /* Adds a scrollbar for vertical overflow */
+        padding-right: 15px; /* Adds spacing for the scrollbar */
+    }
+    .edit-category-section { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .edit-category-section h3 { margin-top: 0; display: flex; align-items: center; }
+    .edit-category-section h3 input { border: none; font-size: 16px; font-weight: bold; }
+    .edit-category-header { display: flex; justify-content: space-between; align-items: center; }
+    .edit-category-header .category-name-group { display: flex; align-items: center; gap: 8px; }
+    .edit-category-header .category-name-group input { font-size: 16px; font-weight: bold; }
+    .edit-category-header .btn-delete-cat { font-size: 18px; border: none; background: transparent; color: #b40000; cursor: pointer; }
+    .product-list { margin-top: 10px; padding-left: 20px; border-left: 2px solid #f0f0f0; }
+    .product-list-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .product-list-item input { flex-grow: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
+    .btn-delete-item { background: #ffebe6; color: #b40000; border: 1px solid #ff7b74; }
+    .btn-add-item { margin-top: 10px; background: #e6f7ff; color: #1890ff; border: 1px solid #1890ff; }
+    .btn-save-edit { background: #0a7b33; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+    .product-input-group { display: flex; gap: 8px; flex-grow: 1; }
+    .product-input-group input { flex-grow: 1; }
+    .product-icon-upload { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
+    .product-icon-upload input[type="file"] { flex-grow: 1; }
+    .product-icon-upload img { width: 30px; height: 30px; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>POS — Ovindrop Cyanotype</h1>
+    <div class="header-buttons">
+      <button id="editProductsBtn" class="btn-small">แก้ไขรายการสินค้า</button>
+      <button id="historyBtn" class="btn-small">ประวัติการซื้อ</button>
+      <button id="summarizeBtn" class="btn-small">สรุปยอด</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="productCategories">
+      </section>
+
+    <aside class="card">
+      <div class="cart-header">
+        <h2>ตะกร้า</h2>
+        <button id="editChannelsBtn" class="btn-small">แก้ไขช่องทางการสั่งซื้อ</button>
+      </div>
+      <div id="channelButtons" class="channel-buttons">
+        </div>
+
+      <table id="cartTable" aria-label="Cart table">
+        <thead>
+          <tr>
+            <th>สินค้า</th>
+            <th class="center">ราคา</th>
+            <th class="center">จำนวน</th>
+            <th class="center">รวม</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="cart-footer">
+        <div class="total-summary">
+            <div>ราคารวมสินค้า: <span class="subtotal-display" id="subtotalDisplay">0</span> ฿</div>
+            <div id="feeRow" style="display: none;">ค่าธรรมเนียม: <span id="feeDisplay">0</span> ฿</div>
+            <div class="final-total">ยอดที่ได้รับ: <span class="final-total-display" id="finalTotalDisplay">0</span> ฿</div>
+        </div>
+        <div class="confirm-wrap">
+          <button id="confirmBtn" class="confirm">✅ ยืนยันการสั่งซื้อ</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="historyModal" class="modal">
+    <div class="modal-content">
+      <span class="close history-close">&times;</span>
+      <h2>ประวัติการซื้อ</h2>
+      <div id="historyList"></div>
+      <div class="history-footer">
+        <button id="clearHistoryBtn" class="btn-small">ล้างประวัติการซื้อ</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="clearConfirmModal" class="modal">
+    <div class="modal-content">
+      <span class="close clear-close">&times;</span>
+      <h2 style="color:#b40000;">⚠️ คำเตือน</h2>
+      <p>การล้างประวัติการสั่งซื้อจะทำให้ข้อมูลสูญหายอย่างถาวร</p>
+      <p><b>กรุณากด "บันทึกข้อมูล" ก่อนล้างทุกครั้ง</b></p>
+      <div class="modal-buttons">
+        <button id="saveAndClearBtn" class="btn-save-data">บันทึกข้อมูล</button>
+        <button id="confirmClearBtn" class="btn-confirm-clear">บันทึกแล้ว</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="editProductsModal" class="modal">
+    <div class="modal-content">
+      <span class="close edit-close">&times;</span>
+      <h2>แก้ไขรายการสินค้า</h2>
+      <div id="editProductsScroll">
+        <div id="editCategoriesContainer"></div>
+        <button id="addCategoryBtn" class="btn-small btn-add-item">+ เพิ่มหมวดหมู่ใหม่</button>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+        <button id="saveEditBtn" class="btn-save-edit">บันทึกการแก้ไข</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editChannelsModal" class="modal">
+    <div class="modal-content">
+        <span class="close channels-close">&times;</span>
+        <h2>แก้ไขช่องทางการสั่งซื้อ</h2>
+        <div id="editChannelsContainer">
+            <div style="display: flex; gap: 8px; font-weight: bold; margin-bottom: 10px;">
+                <div style="flex: 2;">ช่องทางการสั่งซื้อ</div>
+                <div style="flex: 1;">ค่าธรรมเนียม (%)</div>
+                <div style="width: 30px;"></div>
+            </div>
+        </div>
+        <button id="addChannelBtn" class="btn-small btn-add-item">+ เพิ่มช่องทางใหม่</button>
+        <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+            <button id="saveChannelsBtn" class="btn-save-edit">บันทึกการแก้ไข</button>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    // Default products data
+    const defaultProducts = {
+      "แยกส่วน": {
+        "50mL": { price: 149, icon: "https://img.icons8.com/color/96/test-tube.png", profit:97 },
+        "100mL": { price: 269, icon: "https://img.icons8.com/color/96/test-tube.png", profit:193 },
+        "210mL": { price: 529, icon: "https://img.icons8.com/color/96/test-tube.png", profit:341 }
+      },
+      "ผสมพร้อมใช้": {
+        "100mL": { price: 149, icon: "https://img.icons8.com/color/96/beaker.png", profit:97 },
+        "100mL+อุปกรณ์": { price: 169, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "200mL": { price: 269, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "200mL+อุปกรณ์": { price: 289, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "500mL": { price: 549, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "500mL+อุปกรณ์": { price: 569, icon: "https://img.icons8.com/color/96/beaker.png", profit:null }
+      },
+      "Box set": {
+        "100mL": { price: 229, icon: "https://img.icons8.com/color/96/box.png", profit:null },
+        "200mL": { price: 349, icon: "https://img.icons8.com/color/96/box.png", profit:null }
+      },
+      "แบบผง": {
+        "Total 500mL": { price: 849, icon: "https://img.icons8.com/color/96/powder.png", profit:null },
+        "Total 1L": { price: 1690, icon: "https://img.icons8.com/color/96/powder.png", profit:null }
+      }
+    };
+    
+    const defaultChannels = {
+        "หน้าร้าน": 0,
+        "Shopee": 0.13
+    };
+    
+    let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
+    let channels = JSON.parse(localStorage.getItem('channels')) || defaultChannels;
+    let activeChannel = 'หน้าร้าน';
+    let cart = {};
+
+    function makeId(cat, sub){
+      return encodeURIComponent(cat + '||' + sub);
+    }
+
+    function saveProductsToLocalStorage() {
+      localStorage.setItem('products', JSON.stringify(products));
+    }
+    
+    function saveChannelsToLocalStorage() {
+        localStorage.setItem('channels', JSON.stringify(channels));
+    }
+
+    function renderProducts(){
+      const productCategories = document.getElementById('productCategories');
+      productCategories.innerHTML = ''; // Clear existing categories
+      for(const cat in products){
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'category';
+        categoryDiv.innerHTML = `
+          <h2>${cat}</h2>
+          <div class="grid" data-cat="${cat}"></div>
+        `;
+        productCategories.appendChild(categoryDiv);
+
+        const grid = categoryDiv.querySelector('.grid');
+        for(const sub in products[cat]){
+          const p = products[cat][sub];
+          const id = makeId(cat, sub);
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.setAttribute('role','button');
+          div.dataset.id = id;
+          div.dataset.name = `${cat} ${sub}`;
+          div.dataset.price = p.price;
+          div.innerHTML = `
+            <img src="${p.icon}" alt="${sub}">
+            <div class="label">${sub}</div>
+            <div class="price">${p.price} ฿</div>
+          `;
+          div.addEventListener('click', () => addToCart(id, div.dataset.name, Number(div.dataset.price), p.profit));
+          grid.appendChild(div);
+        }
+      }
+    }
+
+    function addToCart(id, name, price, profit = 0){
+      if(!cart[id]){
+        cart[id] = { id, name, price: Number(price), qty: 0, profit: (profit==null?0:profit) };
+      }
+      cart[id].qty += 1;
+      renderCart();
+    }
+
+    function changeQty(id, delta){
+      if(!cart[id]) return;
+      cart[id].qty += delta;
+      if(cart[id].qty <= 0) delete cart[id];
+      renderCart();
+    }
+
+    function removeItem(id){
+      if(cart[id]) delete cart[id];
+      renderCart();
+    }
+
+    function renderChannels() {
+        const channelButtons = document.getElementById('channelButtons');
+        channelButtons.innerHTML = '';
+        for (const channelName in channels) {
+            const button = document.createElement('button');
+            button.className = 'channel-button';
+            button.textContent = channelName;
+            button.dataset.channel = channelName;
+            if (channelName === activeChannel) {
+                button.classList.add('active');
+            }
+            button.onclick = () => {
+                activeChannel = channelName;
+                document.querySelectorAll('.channel-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                renderCart();
+            };
+            channelButtons.appendChild(button);
+        }
+    }
+
+    function renderCart() {
+      const tbody = document.querySelector("#cartTable tbody");
+      tbody.innerHTML = "";
+      let subtotal = 0;
+      for (const id in cart) {
+        const item = cart[id];
+        const itemSubtotal = item.price * item.qty;
+        subtotal += itemSubtotal;
+        
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.price}</td>
+          <td>${item.qty}</td>
+          <td>${itemSubtotal.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+
+        const actionTr = document.createElement("tr");
+        actionTr.className = 'action-row';
+        actionTr.innerHTML = `
+          <td></td>
+          <td></td>
+          <td>
+            <div class="qty-controls">
+                <button class="btn-small btn-plus" data-id="${id}">+</button>
+                <button class="btn-small btn-minus" data-id="${id}">-</button>
+            </div>
+          </td>
+          <td><button class="btn-small btn-remove" data-id="${id}">ลบ</button></td>
+        `;
+        tbody.appendChild(actionTr);
+      }
+      
+      let fee = 0;
+      let finalTotal = subtotal;
+      
+      const feeRate = channels[activeChannel] || 0;
+      if (feeRate > 0) {
+          fee = subtotal * feeRate;
+          finalTotal = subtotal - fee;
+          document.getElementById('feeRow').style.display = 'flex';
+          document.getElementById('feeRow').innerHTML = `ค่าธรรมเนียม (${activeChannel} ${feeRate*100}%): <span id="feeDisplay">${fee.toFixed(2)}</span> ฿`;
+      } else {
+          document.getElementById('feeRow').style.display = 'none';
+      }
+      
+      document.getElementById('subtotalDisplay').innerText = subtotal.toFixed(2);
+      document.getElementById('finalTotalDisplay').innerText = finalTotal.toFixed(2);
+    
+      // Add event listeners to the newly created buttons
+      tbody.querySelectorAll('.btn-plus').forEach(btn => {
+        btn.addEventListener('click', () => changeQty(btn.dataset.id, 1));
+      });
+      tbody.querySelectorAll('.btn-minus').forEach(btn => {
+        btn.addEventListener('click', () => changeQty(btn.dataset.id, -1));
+      });
+      tbody.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (confirm('ยืนยันการลบรายการนี้?')) {
+            removeItem(btn.dataset.id);
+          }
+        });
+      });
+    }
+
+    function saveOrderToHistory(order) {
+      const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
+      history.push(order);
+      localStorage.setItem('purchaseHistory', JSON.stringify(history));
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('purchaseHistory');
+      renderHistory();
+      alert('ประวัติการซื้อถูกล้างเรียบร้อยแล้ว');
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = '';
+      if (history.length === 0) {
+        historyList.innerHTML = '<p>ไม่พบประวัติการซื้อ</p>';
+        return;
+      }
+      history.forEach(order => {
+        const orderDiv = document.createElement('div');
+        orderDiv.className = 'history-item';
+        orderDiv.innerHTML = `
+          <h3>คำสั่งซื้อ #${order.orderId}</h3>
+          <p class="small">วันที่: ${order.datetime}, ช่องทาง: ${order.channel}</p>
+          <p class="small">ยอดรวม: ${order.subtotal} ฿</p>
+          <p class="small">ยอดที่ได้รับ: ${order.finalTotal} ฿</p>
+          <ul>
+            ${order.items.map(item => `
+              <li>${item.name} (จำนวน: ${item.qty}) - รวม: ${item.subtotal} ฿</li>
+            `).join('')}
+          </ul>
+        `;
+        historyList.appendChild(orderDiv);
+      });
+    }
+
+    function exportHistoryToXLSX() {
+      const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
+      if (history.length === 0) {
+        alert('ไม่พบประวัติการซื้อที่จะสรุปยอด');
+        return;
+      }
+
+      const rows = [["Order ID","Datetime (Asia/Bangkok)","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
+      
+      history.forEach(order => {
+        const firstItem = order.items[0];
+        rows.push([
+            order.orderId, 
+            order.datetime,
+            order.channel,
+            firstItem.name, 
+            firstItem.price, 
+            firstItem.qty, 
+            firstItem.subtotal,
+            order.fee,
+            order.finalTotal
+        ]);
+        
+        for (let i = 1; i < order.items.length; i++) {
+            const item = order.items[i];
+            rows.push([
+                "", "", "", 
+                item.name, 
+                item.price, 
+                item.qty, 
+                item.subtotal,
+                "", ""
+            ]);
+        }
+      });
+      
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "สรุปยอดประวัติการซื้อ");
+      
+      let filename = prompt("กรุณาตั้งชื่อไฟล์ (ไม่ต้องใส่ .xlsx):", "สรุปยอด_ประวัติการซื้อ");
+      if (filename) {
+          filename += '.xlsx';
+          XLSX.writeFile(wb, filename);
+      }
+    }
+
+    function renderEditableProducts() {
+      const container = document.getElementById('editCategoriesContainer');
+      container.innerHTML = '';
+      
+      const categoryNames = Object.keys(products);
+      
+      categoryNames.forEach(cat => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'edit-category-section';
+        categoryDiv.innerHTML = `
+          <div class="edit-category-header">
+            <div class="category-name-group">
+                <input type="text" value="${cat}" data-oldname="${cat}">
+                <button class="btn-delete-cat" data-cat="${cat}">&times;</button>
+            </div>
+          </div>
+          <div class="product-list"></div>
+          <button class="btn-small btn-add-item" data-cat="${cat}">+ เพิ่มสินค้าใหม่</button>
+        `;
+        container.appendChild(categoryDiv);
+
+        const productListDiv = categoryDiv.querySelector('.product-list');
+        for (const sub in products[cat]) {
+          const p = products[cat][sub];
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'product-list-item';
+          itemDiv.innerHTML = `
+            <div class="product-icon-upload">
+                <img src="${p.icon}" alt="${sub}">
+                <input type="file" accept="image/*" data-oldicon="${p.icon}">
+            </div>
+            <div class="product-input-group">
+                <input type="text" placeholder="ชื่อสินค้า" value="${sub}" data-field="sub" data-oldname="${sub}">
+                <input type="number" placeholder="ราคา" value="${p.price}" data-field="price">
+                <input type="number" placeholder="กำไร" value="${p.profit}" data-field="profit">
+            </div>
+            <button class="btn-small btn-delete-item" data-cat="${cat}" data-sub="${sub}">&times;</button>
+          `;
+          productListDiv.appendChild(itemDiv);
+          
+          const fileInput = itemDiv.querySelector('input[type="file"]');
+          fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                const img = itemDiv.querySelector('img');
+                img.src = event.target.result;
+                fileInput.dataset.newicon = event.target.result;
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+        }
+      });
+      
+      // Event listener for Add New Category button
+      document.getElementById('addCategoryBtn').onclick = () => {
+          const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
+          if (newCatName && !products[newCatName]) {
+              products[newCatName] = {};
+              renderEditableProducts();
+          } else if (newCatName) {
+              alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
+          }
+      };
+
+      // Event listeners for Add/Delete buttons in the modal
+      container.querySelectorAll('.btn-add-item').forEach(btn => {
+        btn.onclick = () => {
+          const cat = btn.dataset.cat;
+          const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
+          if (!newName || products[cat][newName]) {
+            if (newName) alert("ชื่อสินค้านี้มีอยู่แล้ว หรือชื่อไม่ถูกต้อง");
+            return;
+          }
+          products[cat][newName] = { price: 0, icon: "", profit: 0 };
+          renderEditableProducts();
+        };
+      });
+
+      container.querySelectorAll('.btn-delete-item').forEach(btn => {
+        btn.onclick = () => {
+          const cat = btn.dataset.cat;
+          const sub = btn.dataset.sub;
+          if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
+            delete products[cat][sub];
+            renderEditableProducts();
+          }
+        };
+      });
+      
+      container.querySelectorAll('.btn-delete-cat').forEach(btn => {
+          btn.onclick = () => {
+              const cat = btn.dataset.cat;
+              if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
+                  delete products[cat];
+                  renderEditableProducts();
+              }
+          };
+      });
+    }
+    
+    function saveEditedProducts() {
+        const container = document.getElementById('editCategoriesContainer');
+        const updatedProducts = {};
+        let hasError = false;
+
+        container.querySelectorAll('.edit-category-section').forEach(section => {
+            const oldCatName = section.querySelector('.category-name-group input').dataset.oldname;
+            const newCatName = section.querySelector('.category-name-group input').value;
+            
+            if (!newCatName) {
+                alert('ชื่อหมวดหมู่ต้องไม่ว่าง');
+                hasError = true;
+                return;
+            }
+
+            if (updatedProducts[newCatName] && newCatName !== oldCatName) {
+                alert(`ชื่อหมวดหมู่ "${newCatName}" มีอยู่แล้ว`);
+                hasError = true;
+                return;
+            }
+            
+            updatedProducts[newCatName] = {};
+            
+            section.querySelectorAll('.product-list-item').forEach(item => {
+                const oldName = item.querySelector('[data-field="sub"]').dataset.oldname;
+                const newName = item.querySelector('[data-field="sub"]').value;
+                const icon = item.querySelector('[data-oldicon]').dataset.newicon || item.querySelector('[data-oldicon]').dataset.oldicon;
+                const price = Number(item.querySelector('[data-field="price"]').value);
+                const profit = Number(item.querySelector('[data-field="profit"]').value);
+
+                if (!newName || isNaN(price) || isNaN(profit)) {
+                    alert('กรุณาใส่ข้อมูลให้ครบถ้วนและถูกต้อง');
+                    hasError = true;
+                    return;
+                }
+
+                if (updatedProducts[newCatName][newName] && newName !== oldName) {
+                    alert(`ชื่อสินค้า "${newName}" มีอยู่แล้วในหมวดหมู่ "${newCatName}"`);
+                    hasError = true;
+                    return;
+                }
+                
+                updatedProducts[newCatName][newName] = {
+                    price: price,
+                    icon: icon,
+                    profit: profit
+                };
+            });
+        });
+        
+        if (hasError) return;
+
+        products = updatedProducts;
+        saveProductsToLocalStorage();
+        renderProducts();
+        document.getElementById('editProductsModal').style.display = 'none';
+        alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
+    }
+
+    function renderEditableChannels() {
+        const container = document.getElementById('editChannelsContainer');
+        const channelHeader = `
+            <div style="display: flex; gap: 8px; font-weight: bold; margin-bottom: 10px;">
+                <div style="flex: 2;">ช่องทางการสั่งซื้อ</div>
+                <div style="flex: 1;">ค่าธรรมเนียม (%)</div>
+                <div style="width: 30px;"></div>
+            </div>
+        `;
+        container.innerHTML = channelHeader;
+        for (const name in channels) {
+            const div = document.createElement('div');
+            div.className = 'product-list-item';
+            div.innerHTML = `
+                <div class="product-input-group">
+                    <input type="text" placeholder="ชื่อช่องทาง" value="${name}" data-field="name" data-oldname="${name}">
+                    <input type="number" placeholder="ค่าธรรมเนียม (%)" value="${channels[name] * 100}" data-field="fee">
+                </div>
+                <button class="btn-small btn-delete-item" data-name="${name}">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+        document.querySelectorAll('#editChannelsContainer .btn-delete-item').forEach(btn => {
+            btn.onclick = () => {
+                const name = btn.dataset.name;
+                if (confirm(`คุณต้องการลบช่องทาง "${name}"?`)) {
+                    delete channels[name];
+                    renderEditableChannels();
+                }
+            };
+        });
+    }
+
+    function saveEditedChannels() {
+        const container = document.getElementById('editChannelsContainer');
+        const updatedChannels = {};
+        let hasError = false;
+
+        container.querySelectorAll('.product-list-item').forEach(item => {
+            const oldName = item.querySelector('[data-field="name"]').dataset.oldname;
+            const newName = item.querySelector('[data-field="name"]').value;
+            const fee = Number(item.querySelector('[data-field="fee"]').value);
+
+            if (!newName || isNaN(fee)) {
+                alert('กรุณาใส่ข้อมูลช่องทางให้ครบถ้วนและถูกต้อง');
+                hasError = true;
+                return;
+            }
+            if (updatedChannels[newName] && newName !== oldName) {
+                alert(`ชื่อช่องทาง "${newName}" มีอยู่แล้ว`);
+                hasError = true;
+                return;
+            }
+            updatedChannels[newName] = fee / 100;
+        });
+
+        if (hasError) return;
+        
+        channels = updatedChannels;
+        saveChannelsToLocalStorage();
+        document.getElementById('editChannelsModal').style.display = 'none';
+        
+        // Update active channel and re-render everything
+        if (!channels[activeChannel]) {
+            activeChannel = Object.keys(channels)[0];
+        }
+        renderChannels();
+        renderCart();
+        alert('บันทึกการแก้ไขช่องทางเรียบร้อยแล้ว');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
+      renderChannels();
+      renderCart();
+
+      const historyModal = document.getElementById('historyModal');
+      const clearConfirmModal = document.getElementById('clearConfirmModal');
+      const editProductsModal = document.getElementById('editProductsModal');
+      const editChannelsModal = document.getElementById('editChannelsModal');
+
+      const historyBtn = document.getElementById('historyBtn');
+      const summarizeBtn = document.getElementById('summarizeBtn');
+      const editProductsBtn = document.getElementById('editProductsBtn');
+      const editChannelsBtn = document.getElementById('editChannelsBtn');
+      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+      
+      const historyCloseBtn = document.querySelector('.history-close');
+      const clearCloseBtn = document.querySelector('.clear-close');
+      const editCloseBtn = document.querySelector('.edit-close');
+      const channelsCloseBtn = document.querySelector('.channels-close');
+      
+      const saveAndClearBtn = document.getElementById('saveAndClearBtn');
+      const confirmClearBtn = document.getElementById('confirmClearBtn');
+      const saveEditBtn = document.getElementById('saveEditBtn');
+      const saveChannelsBtn = document.getElementById('saveChannelsBtn');
+      const addChannelBtn = document.getElementById('addChannelBtn');
+      
+      historyBtn.onclick = () => {
+        renderHistory();
+        historyModal.style.display = "block";
+      };
+      
+      editProductsBtn.onclick = () => {
+        renderEditableProducts();
+        editProductsModal.style.display = "block";
+      };
+
+      editChannelsBtn.onclick = () => {
+          renderEditableChannels();
+          editChannelsModal.style.display = 'block';
+      };
+
+      historyCloseBtn.onclick = () => {
+        historyModal.style.display = "none";
+      };
+
+      editCloseBtn.onclick = () => {
+        editProductsModal.style.display = "none";
+      };
+      
+      channelsCloseBtn.onclick = () => {
+          editChannelsModal.style.display = 'none';
+      };
+
+      clearConfirmModal.onclick = (event) => {
+        if (event.target === clearConfirmModal) {
+          clearConfirmModal.style.display = "none";
+        }
+      };
+
+      window.onclick = (event) => {
+        if (event.target === historyModal) {
+          historyModal.style.display = "none";
+        }
+        if (event.target === editProductsModal) {
+          editProductsModal.style.display = "none";
+        }
+        if (event.target === editChannelsModal) {
+          editChannelsModal.style.display = "none";
+        }
+      };
+      
+      clearHistoryBtn.onclick = () => {
+        clearConfirmModal.style.display = "block";
+      };
+
+      clearCloseBtn.onclick = () => {
+        clearConfirmModal.style.display = "none";
+      };
+
+      saveAndClearBtn.onclick = () => {
+        exportHistoryToXLSX();
+        clearConfirmModal.style.display = "none";
+      };
+
+      confirmClearBtn.onclick = () => {
+        clearHistory();
+        clearConfirmModal.style.display = "none";
+        historyModal.style.display = "none";
+      };
+
+      saveEditBtn.onclick = () => {
+          saveEditedProducts();
+      };
+
+      saveChannelsBtn.onclick = () => {
+          saveEditedChannels();
+      };
+      
+      addChannelBtn.onclick = () => {
+          const newName = prompt('กรุณาใส่ชื่อช่องทางใหม่:');
+          const newFee = prompt('กรุณาใส่ค่าธรรมเนียม (%) เช่น 13:');
+          if (newName && !isNaN(newFee)) {
+              channels[newName] = Number(newFee) / 100;
+              renderEditableChannels();
+          } else {
+              alert('ข้อมูลไม่ถูกต้อง');
+          }
+      };
+
+      summarizeBtn.onclick = () => {
+        exportHistoryToXLSX();
+      };
+
+      document.getElementById('confirmBtn').onclick = () => {
+        if(Object.keys(cart).length === 0){
+          alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน');
+          return;
+        }
+        
+        let subtotal = 0;
+        for (const id in cart) {
+            const item = cart[id];
+            subtotal += item.price * item.qty;
+        }
+        
+        const feeRate = channels[activeChannel] || 0;
+        let fee = subtotal * feeRate;
+        let finalTotal = subtotal - fee;
+
+        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
+        const tz = new Intl.DateTimeFormat('th-TH',{ dateStyle:'short', timeStyle:'short', timeZone:'Asia/Bangkok' });
+        const dt = tz.format(new Date());
+        
+        const orderData = {
+          orderId: orderId,
+          datetime: dt,
+          channel: activeChannel,
+          subtotal: subtotal.toFixed(2),
+          fee: fee.toFixed(2),
+          finalTotal: finalTotal.toFixed(2),
+          items: []
+        };
+        
+        for(const id in cart){
+          const it = cart[id];
+          const itemSubtotal = it.price * it.qty;
+          orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
+        }
+        
+        saveOrderToHistory(orderData);
+        alert('บันทึกคำสั่งซื้อเรียบร้อยแล้ว');
+        
+        // เคลียร์ตะกร้า
+        for (const id in cart) {
+            delete cart[id];
+        }
+        renderCart();
+      };
+    });
+  </script>
+</body>
+</html>
