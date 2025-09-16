@@ -703,8 +703,6 @@ function exportDataToXLSX(data) {
     XLSX.writeFile(wb, filename);
 }
 
-// เดิม: exportHistoryToXLSX() จะถูกแทนที่ด้วยการเรียก modal
-// ฟังก์ชันนี้จะถูกเรียกเมื่อกดปุ่ม "ดึงข้อมูลและ Export" ใน modal ใหม่
 async function handleFetchAndExport() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -725,7 +723,7 @@ async function handleFetchAndExport() {
     document.getElementById('summarizeModal').style.display = 'none';
 }
 
-// New function to render history from Google Sheet
+// ฟังก์ชันนี้ถูกเขียนขึ้นใหม่เพื่อแก้ไขการแสดงผลในหน้าประวัติการซื้อ
 async function renderHistoryFromGoogleSheet() {
     const historyModal = document.getElementById('historyFromSheetModal');
     const historyContent = document.getElementById('historyFromSheetContent');
@@ -735,7 +733,6 @@ async function renderHistoryFromGoogleSheet() {
     historyContent.style.display = 'none';
     historyLoader.style.display = 'flex';
 
-    // Get all history data
     const salesData = await getSalesDataFromGoogleSheet("1900-01-01", "2999-12-31");
     
     historyLoader.style.display = 'none';
@@ -746,14 +743,15 @@ async function renderHistoryFromGoogleSheet() {
         return;
     }
 
-    // Group sales data by order ID
+    // New logic to group sales data by order ID
     const groupedData = {};
-    let currentOrderId = null;
+    let lastOrderId = null;
+
     salesData.forEach(item => {
-        if (item["Order ID"] && item["Order ID"] !== "") {
-            currentOrderId = item["Order ID"];
-            groupedData[currentOrderId] = {
-                orderId: item["Order ID"],
+        const orderId = item["Order ID"] || lastOrderId;
+        if (orderId && !groupedData[orderId]) {
+            groupedData[orderId] = {
+                orderId: orderId,
                 datetime: item["Datetime"],
                 channel: item["Channel"],
                 fee: item["Fee"],
@@ -762,14 +760,15 @@ async function renderHistoryFromGoogleSheet() {
             };
         }
         
-        if (currentOrderId && groupedData[currentOrderId]) {
-            groupedData[currentOrderId].items.push({
+        if (orderId && groupedData[orderId]) {
+            groupedData[orderId].items.push({
                 name: item["Item Name"],
                 price: item["Price"],
                 qty: item["Quantity"],
                 subtotal: item["Total"]
             });
         }
+        lastOrderId = orderId;
     });
 
     historyContent.innerHTML = '';
@@ -779,21 +778,19 @@ async function renderHistoryFromGoogleSheet() {
         const order = groupedData[orderId];
         const orderDiv = document.createElement('div');
         orderDiv.className = 'history-detail';
-
-        const orderIdDisplay = order.orderId || "ไม่ระบุ";
         
         orderDiv.innerHTML = `
-            <h4>รายการที่: ${orderIdDisplay}</h4>
-            <p>วันที่: ${order.datetime}</p>
-            <p>ช่องทาง: ${order.channel}</p>
+            <h4>รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
+            <p>วันที่: ${order.datetime || "ไม่ระบุ"}</p>
+            <p>ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
             <div class="history-detail-items">
                 <ul>
                     ${order.items.map(item => `
-                        <li>${item.name} (${item.qty} ชิ้น) - ${item.subtotal} ฿</li>
+                        <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
                     `).join('')}
                 </ul>
             </div>
-            <p><strong>ยอดที่ได้รับ: ${order.finalTotal} ฿</strong></p>
+            <p><strong>ยอดที่ได้รับ: ${order.finalTotal || "0"} ฿</strong></p>
         `;
         historyContent.appendChild(orderDiv);
     });
