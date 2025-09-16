@@ -221,6 +221,45 @@ gap: 10px; flex-grow: 1; }
 }
     .product-icon-upload img { width: 30px; height: 30px; object-fit: contain;
 }
+
+    /* History From Sheet Modal */
+    #historyFromSheetModal .modal-content {
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+    #historyFromSheetContent {
+        overflow-y: auto;
+        padding-right: 15px;
+    }
+    #historyFromSheetContent p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+    #historyFromSheetContent h4 {
+        margin: 10px 0 5px 0;
+    }
+    .history-detail {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 15px;
+    }
+    .history-detail-items ul {
+        list-style: none;
+        padding-left: 20px;
+        margin: 5px 0;
+    }
+    .history-detail-items li {
+        margin-bottom: 5px;
+    }
+    #historyLoader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+        color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -338,13 +377,28 @@ gap: 8px; font-weight: bold; margin-bottom: 10px;">
     <div class="modal-content">
         <span class="close summarize-close">&times;</span>
         <h2>สรุปยอดจาก Google Sheet</h2>
-        <p>กรุณาเลือกช่วงเวลาที่ต้องการสรุปยอด:</p>
-        <div style="display: flex; justify-content: space-around; gap: 10px; margin-bottom: 20px;">
+        <p>เลือกช่วงเวลาที่ต้องการสรุปยอด:</p>
+        <div style="display: flex; justify-content: space-around; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <span style="font-weight: bold; font-size: 1.1em;">จาก</span>
             <input type="date" id="startDate" class="date-input">
+            <span style="font-weight: bold; font-size: 1.1em;">ถึง</span>
             <input type="date" id="endDate" class="date-input">
         </div>
         <div style="display: flex; justify-content: flex-end;">
             <button id="fetchAndExportBtn" class="btn-save-data">ดึงข้อมูลและ Export</button>
+        </div>
+    </div>
+</div>
+
+<div id="historyFromSheetModal" class="modal">
+    <div class="modal-content">
+        <span class="close history-sheet-close">&times;</span>
+        <h2>ประวัติการสั่งซื้อล่าสุด</h2>
+        <div id="historyLoader">กำลังดึงข้อมูล...</div>
+        <div id="historyFromSheetContent" style="display: none;"></div>
+        <div class="history-footer">
+            <button id="historySheetClearBtn" class="btn-small" disabled>ล้างประวัติการซื้อ</button>
+            <p style="font-size: 0.8rem; color: #888; margin-left: 10px;">การลบต้องทำใน Google Sheet โดยตรง</p>
         </div>
     </div>
 </div>
@@ -657,12 +711,83 @@ async function handleFetchAndExport() {
         return;
     }
     
-    const loadingMessage = alert('กำลังดึงข้อมูล... กรุณารอสักครู่');
+    document.getElementById('fetchAndExportBtn').textContent = "กำลังดึงข้อมูล...";
+    document.getElementById('fetchAndExportBtn').disabled = true;
+    
     const salesData = await getSalesDataFromGoogleSheet(startDate, endDate);
-    if (loadingMessage) loadingMessage.close(); // Not a real alert, just a placeholder.
+    
+    document.getElementById('fetchAndExportBtn').textContent = "ดึงข้อมูลและ Export";
+    document.getElementById('fetchAndExportBtn').disabled = false;
     
     exportDataToXLSX(salesData);
     document.getElementById('summarizeModal').style.display = 'none';
+}
+
+// New function to render history from Google Sheet
+async function renderHistoryFromGoogleSheet() {
+    const historyModal = document.getElementById('historyFromSheetModal');
+    const historyContent = document.getElementById('historyFromSheetContent');
+    const historyLoader = document.getElementById('historyLoader');
+
+    historyModal.style.display = 'block';
+    historyContent.style.display = 'none';
+    historyLoader.style.display = 'flex';
+
+    // Get all history data
+    const salesData = await getSalesDataFromGoogleSheet("1900-01-01", "2999-12-31");
+    
+    historyLoader.style.display = 'none';
+    historyContent.style.display = 'block';
+
+    if (salesData.length === 0) {
+        historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>';
+        return;
+    }
+
+    // Group sales data by order ID
+    const groupedData = {};
+    salesData.forEach(item => {
+        const orderId = item["Order ID"];
+        if (!groupedData[orderId]) {
+            groupedData[orderId] = {
+                orderId: item["Order ID"],
+                datetime: item["Datetime"],
+                channel: item["Channel"],
+                fee: item["Fee"],
+                finalTotal: item["Final Total"],
+                items: []
+            };
+        }
+        groupedData[orderId].items.push({
+            name: item["Item Name"],
+            price: item["Price"],
+            qty: item["Quantity"],
+            subtotal: item["Total"]
+        });
+    });
+
+    historyContent.innerHTML = '';
+    const orderIds = Object.keys(groupedData).sort().reverse(); // Sort descending by orderId
+
+    orderIds.forEach(orderId => {
+        const order = groupedData[orderId];
+        const orderDiv = document.createElement('div');
+        orderDiv.className = 'history-detail';
+        orderDiv.innerHTML = `
+            <h4>รายการที่: ${order.orderId}</h4>
+            <p>วันที่: ${order.datetime}</p>
+            <p>ช่องทาง: ${order.channel}</p>
+            <div class="history-detail-items">
+                <ul>
+                    ${order.items.map(item => `
+                        <li>${item.name} (${item.qty} ชิ้น) - ${item.subtotal} ฿</li>
+                    `).join('')}
+                </ul>
+            </div>
+            <p><strong>ยอดที่ได้รับ: ${order.finalTotal} ฿</strong></p>
+        `;
+        historyContent.appendChild(orderDiv);
+    });
 }
 
 
@@ -921,110 +1046,94 @@ if (hasError) return;
       const editProductsModal = document.getElementById('editProductsModal');
       const editChannelsModal = document.getElementById('editChannelsModal');
       const summarizeModal = document.getElementById('summarizeModal');
+      const historyFromSheetModal = document.getElementById('historyFromSheetModal');
 
       const historyBtn = document.getElementById('historyBtn');
       const summarizeBtn = document.getElementById('summarizeBtn');
       const editProductsBtn = document.getElementById('editProductsBtn');
       const editChannelsBtn = document.getElementById('editChannelsBtn');
    
-const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-      
       const historyCloseBtn = document.querySelector('.history-close');
       const clearCloseBtn = document.querySelector('.clear-close');
       const editCloseBtn = document.querySelector('.edit-close');
-const channelsCloseBtn = document.querySelector('.channels-close');
-const summarizeCloseBtn = document.querySelector('.summarize-close');
+      const channelsCloseBtn = document.querySelector('.channels-close');
+      const summarizeCloseBtn = document.querySelector('.summarize-close');
+      const historySheetCloseBtn = document.querySelector('.history-sheet-close');
       
       const saveAndClearBtn = document.getElementById('saveAndClearBtn');
       const confirmClearBtn = document.getElementById('confirmClearBtn');
       const saveEditBtn = document.getElementById('saveEditBtn');
       const saveChannelsBtn = document.getElementById('saveChannelsBtn');
-const addChannelBtn = document.getElementById('addChannelBtn');
-const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
+      const addChannelBtn = document.getElementById('addChannelBtn');
+      const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
       
+      // Handlers for old local storage modals (now disabled)
       historyBtn.onclick = () => {
-        //renderHistory(); // ฟังก์ชันนี้จะใช้งานเมื่อข้อมูลอยู่ใน local storage
-        alert('ฟังก์ชันประวัติการซื้อใน local storage ถูกปิดใช้งานแล้ว');
-        //historyModal.style.display = "block";
-};
+        renderHistoryFromGoogleSheet();
+      };
       
       editProductsBtn.onclick = () => {
         renderEditableProducts();
         editProductsModal.style.display = "block";
-};
-editChannelsBtn.onclick = () => {
+      };
+      
+      editChannelsBtn.onclick = () => {
           renderEditableChannels();
           editChannelsModal.style.display = 'block';
-};
-historyCloseBtn.onclick = () => {
-        historyModal.style.display = "none";
-};
-editCloseBtn.onclick = () => {
-        editProductsModal.style.display = "none";
-};
-channelsCloseBtn.onclick = () => {
-          editChannelsModal.style.display = 'none';
-};
-summarizeCloseBtn.onclick = () => {
-    summarizeModal.style.display = 'none';
-};
+      };
 
-clearConfirmModal.onclick = (event) => {
-        if (event.target === clearConfirmModal) {
-          clearConfirmModal.style.display = "none";
-}
-};
+      editCloseBtn.onclick = () => {
+        editProductsModal.style.display = "none";
+      };
+
+      channelsCloseBtn.onclick = () => {
+          editChannelsModal.style.display = 'none';
+      };
+
+      summarizeCloseBtn.onclick = () => {
+          summarizeModal.style.display = 'none';
+      };
+
+      historySheetCloseBtn.onclick = () => {
+          historyFromSheetModal.style.display = 'none';
+      };
 
       window.onclick = (event) => {
         if (event.target === historyModal) {
           historyModal.style.display = "none";
-}
+        }
         if (event.target === editProductsModal) {
           editProductsModal.style.display = "none";
-}
+        }
         if (event.target === editChannelsModal) {
           editChannelsModal.style.display = "none";
-}
+        }
         if (event.target === summarizeModal) {
             summarizeModal.style.display = 'none';
         }
-};
+        if (event.target === historyFromSheetModal) {
+            historyFromSheetModal.style.display = 'none';
+        }
+      };
       
-      clearHistoryBtn.onclick = () => {
-        alert('การล้างประวัติการซื้อจาก local storage ถูกปิดใช้งานแล้ว');
-        //clearConfirmModal.style.display = "block";
-};
-
-      clearCloseBtn.onclick = () => {
-        clearConfirmModal.style.display = "none";
-};
-      saveAndClearBtn.onclick = () => {
-        alert('ฟังก์ชันนี้ถูกปิดใช้งานแล้ว เนื่องจากข้อมูลถูกย้ายไปบันทึกบน Google Sheet');
-        // exportHistoryToXLSX();
-        // clearConfirmModal.style.display = "none";
-};
-      confirmClearBtn.onclick = () => {
-        alert('ฟังก์ชันนี้ถูกปิดใช้งานแล้ว เนื่องจากข้อมูลถูกย้ายไปบันทึกบน Google Sheet');
-        // clearHistory();
-        // clearConfirmModal.style.display = "none";
-        // historyModal.style.display = "none";
-};
-saveEditBtn.onclick = () => {
+      saveEditBtn.onclick = () => {
           saveEditedProducts();
-};
-saveChannelsBtn.onclick = () => {
+      };
+      
+      saveChannelsBtn.onclick = () => {
           saveEditedChannels();
-};
-addChannelBtn.onclick = () => {
+      };
+      
+      addChannelBtn.onclick = () => {
           const newName = prompt('กรุณาใส่ชื่อช่องทางใหม่:');
-const newFee = prompt('กรุณาใส่ค่าธรรมเนียม (%) เช่น 13:');
+          const newFee = prompt('กรุณาใส่ค่าธรรมเนียม (%) เช่น 13:');
           if (newName && !isNaN(newFee)) {
               channels[newName] = Number(newFee) / 100;
-renderEditableChannels();
+              renderEditableChannels();
           } else {
               alert('ข้อมูลไม่ถูกต้อง');
-}
-};
+          }
+      };
       
       // Handle Summarize button
       summarizeBtn.onclick = () => {
@@ -1037,17 +1146,16 @@ renderEditableChannels();
       document.getElementById('confirmBtn').onclick = async () => {
         if(Object.keys(cart).length === 0){
           alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน');
-return;
+          return;
         }
         
         let subtotal = 0;
-for (const id in cart) {
+        for (const id in cart) {
             const item = cart[id];
-subtotal += item.price * item.qty;
+            subtotal += item.price * item.qty;
         }
         
-        const feeRate = channels[activeChannel] ||
-0;
+        const feeRate = channels[activeChannel] || 0;
         let fee = subtotal * feeRate;
         let finalTotal = subtotal - fee;
 
@@ -1063,11 +1171,11 @@ subtotal += item.price * item.qty;
           finalTotal: finalTotal.toFixed(2),
           items: []
         };
-for(const id in cart){
+        for(const id in cart){
           const it = cart[id];
-const itemSubtotal = it.price * it.qty;
+          const itemSubtotal = it.price * it.qty;
           orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
-}
+        }
         
         // Save order to Google Sheet
         await saveOrderToGoogleSheet(orderData);
