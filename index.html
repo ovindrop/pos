@@ -25,7 +25,7 @@ padding-bottom:8px; }
     .grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
     .item{ background:#fff; border:1px solid #e6eef9; border-radius:10px;
 padding:12px; text-align:center; cursor:pointer; transition:all .12s; }
-    .item:hover{ transform:translateY(-4px); box-shadow:0 6-px 18px rgba(25,50,100,.06); border-color:var(--accent);
+    .item:hover{ transform:translateY(-4px); box-shadow:0 6px 18px rgba(25,50,100,.06); border-color:var(--accent);
 }
     .item img{ width:56px; height:56px; object-fit:contain; margin-bottom:8px; }
     .item .label{ font-weight:600; margin-bottom:6px;
@@ -1160,8 +1160,11 @@ if (hasError) return;
         let finalTotal = subtotal - fee;
 
         const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
-        const dt = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: 'short', timeStyle: 'short' });
         
+        // แก้ไขตรงนี้: เปลี่ยนรูปแบบการบันทึกวันที่ให้เป็นรูปแบบมาตรฐาน
+        const now = new Date();
+        const dt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
         const orderData = {
           orderId: orderId,
           datetime: dt,
