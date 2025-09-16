@@ -1159,10 +1159,9 @@ if (hasError) return;
         let fee = subtotal * feeRate;
         let finalTotal = subtotal - fee;
 
-        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
-        const tz = new Intl.DateTimeFormat('th-TH',{ dateStyle:'short', timeStyle:'short', timeZone:'Asia/Bangkok' });
-        const dt = tz.format(new Date());
-
+        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'').substring(0,16);
+        const dt = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: 'short', timeStyle: 'short' });
+        
         const orderData = {
           orderId: orderId,
           datetime: dt,
