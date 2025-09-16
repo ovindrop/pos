@@ -163,6 +163,31 @@
     .product-icon-upload { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
     .product-icon-upload input[type="file"] { flex-grow: 1; }
     .product-icon-upload img { width: 30px; height: 30px; object-fit: contain; }
+    
+    /* Summary Modal */
+    #summaryModal .modal-content {
+      width: 90%;
+      max-width: 800px;
+    }
+    .summary-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    .summary-controls label {
+      font-weight: bold;
+    }
+    .summary-controls input[type="date"] {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .summary-controls button {
+      padding: 8px 12px;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
@@ -171,7 +196,7 @@
     <div class="header-buttons">
       <button id="editProductsBtn" class="btn-small">แก้ไขรายการสินค้า</button>
       <button id="historyBtn" class="btn-small">ประวัติการซื้อ</button>
-      <button id="summarizeBtn" class="btn-small">สรุปยอด</button>
+      <button id="summaryBtn" class="btn-small">สรุปยอด</button>
     </div>
   </header>
 
@@ -268,8 +293,23 @@
     </div>
   </div>
 
+  <div id="summaryModal" class="modal">
+    <div class="modal-content">
+        <span class="close summary-close">&times;</span>
+        <h2>สร้างรายงานสรุปยอด</h2>
+        <div class="summary-controls">
+            <label for="startDate">จากวันที่:</label>
+            <input type="date" id="startDate">
+            <label for="endDate">ถึงวันที่:</label>
+            <input type="date" id="endDate">
+            <button id="generateSummaryBtn" class="btn-small btn-save-edit">สร้างรายงานสรุป</button>
+        </div>
+        <p class="muted">เมื่อกด "สร้างรายงานสรุป" ระบบจะสร้างข้อมูลในชีต "Dashboard" โดยอัตโนมัติ</p>
+    </div>
+  </div>
+
   <script>
-    const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwrhyEaeIBkvgdJUjacvXyqJxNvRuu56mjUM6QRwOR-1AMREoMJoQNirVK-SyC0bSJQXQ/exec';
+    const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMZDJUYcfMejY5kEtEJ41to_OLRYRPIl-gGZNC3CPrVPA-IyTiJfHbSsw3eL8PBWXAsA/exec';
 
     let products = {};
     let channels = {};
@@ -802,6 +842,44 @@
         }
     }
 
+    async function generateSummaryReport() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            alert('กรุณาเลือกช่วงวันที่ให้ครบถ้วน');
+            return;
+        }
+
+        document.getElementById('generateSummaryBtn').innerText = 'กำลังสร้าง...';
+        document.getElementById('generateSummaryBtn').disabled = true;
+
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'generateSummary', 
+                    dateRange: { startDate, endDate }
+                })
+            });
+
+            if (response.ok) {
+                alert('สร้างรายงานสรุปในชีต "Dashboard" เรียบร้อยแล้ว');
+                document.getElementById('summaryModal').style.display = 'none';
+            } else {
+                const errorText = await response.text();
+                alert('เกิดข้อผิดพลาดในการสร้างรายงาน: ' + errorText);
+            }
+        } catch (error) {
+            console.error('Error generating summary:', error);
+            alert('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อสร้างรายงาน');
+        } finally {
+            document.getElementById('generateSummaryBtn').innerText = 'สร้างรายงานสรุป';
+            document.getElementById('generateSummaryBtn').disabled = false;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       initializeData();
 
@@ -809,23 +887,26 @@
       const clearConfirmModal = document.getElementById('clearConfirmModal');
       const editProductsModal = document.getElementById('editProductsModal');
       const editChannelsModal = document.getElementById('editChannelsModal');
+      const summaryModal = document.getElementById('summaryModal');
 
       const historyBtn = document.getElementById('historyBtn');
-      const summarizeBtn = document.getElementById('summarizeBtn');
       const editProductsBtn = document.getElementById('editProductsBtn');
       const editChannelsBtn = document.getElementById('editChannelsBtn');
+      const summaryBtn = document.getElementById('summaryBtn');
       const clearHistoryBtn = document.getElementById('clearHistoryBtn');
       
       const historyCloseBtn = document.querySelector('.history-close');
       const clearCloseBtn = document.querySelector('.clear-close');
       const editCloseBtn = document.querySelector('.edit-close');
       const channelsCloseBtn = document.querySelector('.channels-close');
+      const summaryCloseBtn = document.querySelector('.summary-close');
       
       const saveAndClearBtn = document.getElementById('saveAndClearBtn');
       const confirmClearBtn = document.getElementById('confirmClearBtn');
       const saveEditBtn = document.getElementById('saveEditBtn');
       const saveChannelsBtn = document.getElementById('saveChannelsBtn');
       const addChannelBtn = document.getElementById('addChannelBtn');
+      const generateSummaryBtn = document.getElementById('generateSummaryBtn');
       
       historyBtn.onclick = async () => {
         const history = await fetchHistory();
@@ -843,6 +924,10 @@
           editChannelsModal.style.display = 'block';
       };
 
+      summaryBtn.onclick = () => {
+          summaryModal.style.display = 'block';
+      };
+
       historyCloseBtn.onclick = () => {
         historyModal.style.display = "none";
       };
@@ -853,6 +938,10 @@
       
       channelsCloseBtn.onclick = () => {
           editChannelsModal.style.display = 'none';
+      };
+
+      summaryCloseBtn.onclick = () => {
+          summaryModal.style.display = 'none';
       };
 
       clearConfirmModal.onclick = (event) => {
@@ -870,6 +959,9 @@
         }
         if (event.target === editChannelsModal) {
           editChannelsModal.style.display = "none";
+        }
+        if (event.target === summaryModal) {
+          summaryModal.style.display = "none";
         }
       };
       
@@ -910,10 +1002,8 @@
               alert('ข้อมูลไม่ถูกต้อง');
           }
       };
-
-      summarizeBtn.onclick = () => {
-        exportHistoryToXLSX();
-      };
+      
+      generateSummaryBtn.onclick = generateSummaryReport;
 
       document.getElementById('confirmBtn').onclick = async () => {
         if(Object.keys(cart).length === 0){
