@@ -25,7 +25,7 @@ padding-bottom:8px; }
     .grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
     .item{ background:#fff; border:1px solid #e6eef9; border-radius:10px;
 padding:12px; text-align:center; cursor:pointer; transition:all .12s; }
-    .item:hover{ transform:translateY(-4px); box-shadow:0 6px 18px rgba(25,50,100,.06); border-color:var(--accent);
+    .item:hover{ transform:translateY(-4px); box-shadow:0 6-px 18px rgba(25,50,100,.06); border-color:var(--accent);
 }
     .item img{ width:56px; height:56px; object-fit:contain; margin-bottom:8px; }
     .item .label{ font-weight:600; margin-bottom:6px;
@@ -405,7 +405,7 @@ gap: 8px; font-weight: bold; margin-bottom: 10px;">
 
   <script>
     // ** เปลี่ยน URL ตรงนี้เป็น URL ของ Web app ของคุณที่ได้จาก Google Apps Script **
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBijhwqNKq529Zbg_oRzoiZd8toXCeFQgqYGxxybFIFG5DG28fvhC42_1Vec_90fUIRA/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz1HURSDPfNU0phrNBG7YhfZhRqgqMmp3p4XWZ3bxEhxqBAbrtco7MSfXkUXjtgpKKX7w/exec";
 
     const defaultProducts = {
       "แยกส่วน": {
@@ -1159,7 +1159,7 @@ if (hasError) return;
         let fee = subtotal * feeRate;
         let finalTotal = subtotal - fee;
 
-        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'').substring(0,16);
+        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
         const dt = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: 'short', timeStyle: 'short' });
         
         const orderData = {
