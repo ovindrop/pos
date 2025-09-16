@@ -238,15 +238,15 @@
   
   <div id="editProductsModal" class="modal">
     <div class="modal-content">
-        <span class="close edit-close">&times;</span>
-        <h2>แก้ไขรายการสินค้า</h2>
-        <div id="editProductsScroll">
-          <div id="editCategoriesContainer"></div>
-          <button id="addCategoryBtn" class="btn-small btn-add-item">+ เพิ่มหมวดหมู่ใหม่</button>
-        </div>
-        <div style="display:flex; justify-content:flex-end; margin-top:20px;">
-          <button id="saveEditBtn" class="btn-save-edit">บันทึกการแก้ไข</button>
-        </div>
+      <span class="close edit-close">&times;</span>
+      <h2>แก้ไขรายการสินค้า</h2>
+      <div id="editProductsScroll">
+        <div id="editCategoriesContainer"></div>
+        <button id="addCategoryBtn" class="btn-small btn-add-item">+ เพิ่มหมวดหมู่ใหม่</button>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+        <button id="saveEditBtn" class="btn-save-edit">บันทึกการแก้ไข</button>
+      </div>
     </div>
   </div>
 
@@ -895,12 +895,9 @@
         }
         
         let subtotal = 0;
-        let itemsForSheet = [];
         for (const id in cart) {
             const item = cart[id];
-            const itemSubtotal = item.price * item.qty;
-            subtotal += itemSubtotal;
-            itemsForSheet.push({ name: item.name, price: item.price, qty: item.qty });
+            subtotal += item.price * item.qty;
         }
         
         const feeRate = channels[activeChannel] || 0;
@@ -912,46 +909,29 @@
         const dt = tz.format(new Date());
         
         const orderData = {
-            orderId: orderId,
-            datetime: dt,
-            channel: activeChannel,
-            subtotal: subtotal.toFixed(2),
-            fee: fee.toFixed(2),
-            finalTotal: finalTotal.toFixed(2),
-            items: itemsForSheet
+          orderId: orderId,
+          datetime: dt,
+          channel: activeChannel,
+          subtotal: subtotal.toFixed(2),
+          fee: fee.toFixed(2),
+          finalTotal: finalTotal.toFixed(2),
+          items: []
         };
-
-        const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxayhaUhXR5udOt844eqtsvX3RLREBmZ4sYVm2Xa_B0SMZMImWXElVZBNg-vG3wk2UgKw/exec';
         
-        fetch(appsScriptUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(orderData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(text) });
-            }
-            return response.text();
-        })
-        .then(text => {
-            alert('บันทึกคำสั่งซื้อเรียบร้อยแล้ว');
-            
-            // Save to local history as well
-            saveOrderToHistory(orderData);
-            
-            // Clear cart
-            for (const id in cart) {
-                delete cart[id];
-            }
-            renderCart();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
-        });
+        for(const id in cart){
+          const it = cart[id];
+          const itemSubtotal = it.price * it.qty;
+          orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
+        }
+        
+        saveOrderToHistory(orderData);
+        alert('บันทึกคำสั่งซื้อเรียบร้อยแล้ว');
+        
+        // เคลียร์ตะกร้า
+        for (const id in cart) {
+            delete cart[id];
+        }
+        renderCart();
       };
     });
   </script>
