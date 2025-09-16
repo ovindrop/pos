@@ -329,7 +329,7 @@ gap: 10px; flex-grow: 1; }
       <span class="close clear-close">&times;</span>
       <h2 style="color:#b40000;">⚠️ คำเตือน</h2>
       <p>การล้างประวัติการสั่งซื้อจะทำให้ข้อมูลสูญหายอย่างถาวร</p>
-      <p><b>กรุณากด "บันทึกข้อมูล" ก่อนล้างทุกครั้ง</b></p>
+      <p><b>กรุณาบันทึกข้อมูลก่อนล้างทุกครั้ง</b></p>
       <div class="modal-buttons">
         <button id="saveAndClearBtn" class="btn-save-data">บันทึกข้อมูล</button>
         <button id="confirmClearBtn" class="btn-confirm-clear">บันทึกแล้ว</button>
@@ -649,8 +649,9 @@ function exportDataToXLSX(data) {
     
     // Group items by Order ID to handle multi-item orders
     const groupedData = {};
+    let lastOrderId = null;
     data.forEach(item => {
-        const orderId = item["Order ID"];
+        const orderId = item["Order ID"] || lastOrderId;
         if (!groupedData[orderId]) {
             groupedData[orderId] = { ...item, items: [] };
         }
@@ -660,6 +661,7 @@ function exportDataToXLSX(data) {
             qty: item["Quantity"],
             subtotal: item["Total"]
         });
+        lastOrderId = orderId;
     });
 
     for (const orderId in groupedData) {
@@ -746,10 +748,11 @@ async function renderHistoryFromGoogleSheet() {
 
     // Group sales data by order ID
     const groupedData = {};
+    let currentOrderId = null;
     salesData.forEach(item => {
-        const orderId = item["Order ID"];
-        if (!groupedData[orderId]) {
-            groupedData[orderId] = {
+        if (item["Order ID"] && item["Order ID"] !== "") {
+            currentOrderId = item["Order ID"];
+            groupedData[currentOrderId] = {
                 orderId: item["Order ID"],
                 datetime: item["Datetime"],
                 channel: item["Channel"],
@@ -758,23 +761,29 @@ async function renderHistoryFromGoogleSheet() {
                 items: []
             };
         }
-        groupedData[orderId].items.push({
-            name: item["Item Name"],
-            price: item["Price"],
-            qty: item["Quantity"],
-            subtotal: item["Total"]
-        });
+        
+        if (currentOrderId && groupedData[currentOrderId]) {
+            groupedData[currentOrderId].items.push({
+                name: item["Item Name"],
+                price: item["Price"],
+                qty: item["Quantity"],
+                subtotal: item["Total"]
+            });
+        }
     });
 
     historyContent.innerHTML = '';
-    const orderIds = Object.keys(groupedData).sort().reverse(); // Sort descending by orderId
+    const orderIds = Object.keys(groupedData).sort().reverse();
 
     orderIds.forEach(orderId => {
         const order = groupedData[orderId];
         const orderDiv = document.createElement('div');
         orderDiv.className = 'history-detail';
+
+        const orderIdDisplay = order.orderId || "ไม่ระบุ";
+        
         orderDiv.innerHTML = `
-            <h4>รายการที่: ${order.orderId}</h4>
+            <h4>รายการที่: ${orderIdDisplay}</h4>
             <p>วันที่: ${order.datetime}</p>
             <p>ช่องทาง: ${order.channel}</p>
             <div class="history-detail-items">
@@ -1159,8 +1168,9 @@ if (hasError) return;
         let fee = subtotal * feeRate;
         let finalTotal = subtotal - fee;
 
-        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'').substring(0,16);
-        const dt = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: 'short', timeStyle: 'short' });
+        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
+        // แก้ไข: ส่งวันที่ในรูปแบบ ISO 8601 ที่เป็นมาตรฐาน
+        const dt = new Date().toISOString();
         
         const orderData = {
           orderId: orderId,
