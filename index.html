@@ -177,7 +177,7 @@
 
   <main>
     <section id="productCategories">
-      </section>
+    </section>
 
     <aside class="card">
       <div class="cart-header">
@@ -185,7 +185,7 @@
         <button id="editChannelsBtn" class="btn-small">แก้ไขช่องทางการสั่งซื้อ</button>
       </div>
       <div id="channelButtons" class="channel-buttons">
-        </div>
+      </div>
 
       <table id="cartTable" aria-label="Cart table">
         <thead>
@@ -227,7 +227,7 @@
     <div class="modal-content">
       <span class="close clear-close">&times;</span>
       <h2 style="color:#b40000;">⚠️ คำเตือน</h2>
-      <p>การล้างประวัติการสั่งซื้อจะทำให้ข้อมูลสูญหายอย่างถาวร</p>
+      <p>การล้างประวัติการสั่งซื้อจะทำให้ข้อมูลใน Google Sheet หายไปอย่างถาวร</p>
       <p><b>กรุณากด "บันทึกข้อมูล" ก่อนล้างทุกครั้ง</b></p>
       <div class="modal-buttons">
         <button id="saveAndClearBtn" class="btn-save-data">บันทึกข้อมูล</button>
@@ -269,51 +269,38 @@
   </div>
 
   <script>
-    // Default products data
-    const defaultProducts = {
-      "แยกส่วน": {
-        "50mL": { price: 149, icon: "https://img.icons8.com/color/96/test-tube.png", profit:97 },
-        "100mL": { price: 269, icon: "https://img.icons8.com/color/96/test-tube.png", profit:193 },
-        "210mL": { price: 529, icon: "https://img.icons8.com/color/96/test-tube.png", profit:341 }
-      },
-      "ผสมพร้อมใช้": {
-        "100mL": { price: 149, icon: "https://img.icons8.com/color/96/beaker.png", profit:97 },
-        "100mL+อุปกรณ์": { price: 169, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
-        "200mL": { price: 269, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
-        "200mL+อุปกรณ์": { price: 289, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
-        "500mL": { price: 549, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
-        "500mL+อุปกรณ์": { price: 569, icon: "https://img.icons8.com/color/96/beaker.png", profit:null }
-      },
-      "Box set": {
-        "100mL": { price: 229, icon: "https://img.icons8.com/color/96/box.png", profit:null },
-        "200mL": { price: 349, icon: "https://img.icons8.com/color/96/box.png", profit:null }
-      },
-      "แบบผง": {
-        "Total 500mL": { price: 849, icon: "https://img.icons8.com/color/96/powder.png", profit:null },
-        "Total 1L": { price: 1690, icon: "https://img.icons8.com/color/96/powder.png", profit:null }
-      }
-    };
-    
-    const defaultChannels = {
-        "หน้าร้าน": 0,
-        "Shopee": 0.13
-    };
-    
-    let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
-    let channels = JSON.parse(localStorage.getItem('channels')) || defaultChannels;
-    let activeChannel = 'หน้าร้าน';
+    const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxayhaUhXR5udOt844eqtsvX3RLREBmZ4sYVm2Xa_B0SMZMImWXElVZBNg-vG3wk2UgKw/exec';
+
+    let products = {};
+    let channels = {};
+    let activeChannel;
     let cart = {};
+    
+    // Initial data load function
+    async function initializeData() {
+        try {
+            const [productsResponse, channelsResponse] = await Promise.all([
+                fetch(appsScriptUrl + '?action=getProducts'),
+                fetch(appsScriptUrl + '?action=getChannels')
+            ]);
+
+            products = await productsResponse.json();
+            channels = await channelsResponse.json();
+
+            // Set active channel based on the first key in the fetched data
+            activeChannel = Object.keys(channels)[0];
+
+            renderProducts();
+            renderChannels();
+            renderCart();
+        } catch (error) {
+            console.error('Error fetching initial data:', error);
+            alert('เกิดข้อผิดพลาดในการดึงข้อมูล กรุณาลองใหม่ภายหลัง');
+        }
+    }
 
     function makeId(cat, sub){
       return encodeURIComponent(cat + '||' + sub);
-    }
-
-    function saveProductsToLocalStorage() {
-      localStorage.setItem('products', JSON.stringify(products));
-    }
-    
-    function saveChannelsToLocalStorage() {
-        localStorage.setItem('channels', JSON.stringify(channels));
     }
 
     function renderProducts(){
@@ -456,20 +443,18 @@
       });
     }
 
-    function saveOrderToHistory(order) {
-      const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
-      history.push(order);
-      localStorage.setItem('purchaseHistory', JSON.stringify(history));
+    async function fetchHistory() {
+        try {
+            const response = await fetch(appsScriptUrl + '?action=getHistory');
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            alert('เกิดข้อผิดพลาดในการดึงประวัติการซื้อ');
+            return [];
+        }
     }
 
-    function clearHistory() {
-      localStorage.removeItem('purchaseHistory');
-      renderHistory();
-      alert('ประวัติการซื้อถูกล้างเรียบร้อยแล้ว');
-    }
-
-    function renderHistory() {
-      const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
+    function renderHistory(history) {
       const historyList = document.getElementById('historyList');
       historyList.innerHTML = '';
       if (history.length === 0) {
@@ -486,7 +471,7 @@
           <p class="small">ยอดที่ได้รับ: ${order.finalTotal} ฿</p>
           <ul>
             ${order.items.map(item => `
-              <li>${item.name} (จำนวน: ${item.qty}) - รวม: ${item.subtotal} ฿</li>
+              <li>${item.name} (จำนวน: ${item.qty})</li>
             `).join('')}
           </ul>
         `;
@@ -494,8 +479,27 @@
       });
     }
 
-    function exportHistoryToXLSX() {
-      const history = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
+    async function clearHistory() {
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'clearHistory' })
+            });
+            if (response.ok) {
+                alert('ประวัติการซื้อถูกล้างเรียบร้อยแล้ว');
+                renderHistory([]); // Clear the history on the frontend
+            } else {
+                alert('เกิดข้อผิดพลาดในการล้างประวัติ');
+            }
+        } catch (error) {
+            console.error('Error clearing history:', error);
+            alert('เกิดข้อผิดพลาดในการล้างประวัติ');
+        }
+    }
+
+    async function exportHistoryToXLSX() {
+      const history = await fetchHistory();
       if (history.length === 0) {
         alert('ไม่พบประวัติการซื้อที่จะสรุปยอด');
         return;
@@ -512,7 +516,7 @@
             firstItem.name, 
             firstItem.price, 
             firstItem.qty, 
-            firstItem.subtotal,
+            order.subtotal,
             order.fee,
             order.finalTotal
         ]);
@@ -524,8 +528,7 @@
                 item.name, 
                 item.price, 
                 item.qty, 
-                item.subtotal,
-                "", ""
+                "", "", ""
             ]);
         }
       });
@@ -644,7 +647,7 @@
       });
     }
     
-    function saveEditedProducts() {
+    async function saveEditedProducts() {
         const container = document.getElementById('editCategoriesContainer');
         const updatedProducts = {};
         let hasError = false;
@@ -696,11 +699,24 @@
         
         if (hasError) return;
 
-        products = updatedProducts;
-        saveProductsToLocalStorage();
-        renderProducts();
-        document.getElementById('editProductsModal').style.display = 'none';
-        alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'saveProducts', products: updatedProducts })
+            });
+            if (response.ok) {
+                alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
+                products = updatedProducts;
+                renderProducts();
+                document.getElementById('editProductsModal').style.display = 'none';
+            } else {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+        } catch (error) {
+            console.error('Error saving products:', error);
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        }
     }
 
     function renderEditableChannels() {
@@ -736,7 +752,7 @@
         });
     }
 
-    function saveEditedChannels() {
+    async function saveEditedChannels() {
         const container = document.getElementById('editChannelsContainer');
         const updatedChannels = {};
         let hasError = false;
@@ -761,23 +777,33 @@
 
         if (hasError) return;
         
-        channels = updatedChannels;
-        saveChannelsToLocalStorage();
-        document.getElementById('editChannelsModal').style.display = 'none';
-        
-        // Update active channel and re-render everything
-        if (!channels[activeChannel]) {
-            activeChannel = Object.keys(channels)[0];
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'saveChannels', channels: updatedChannels })
+            });
+            if (response.ok) {
+                alert('บันทึกการแก้ไขช่องทางเรียบร้อยแล้ว');
+                channels = updatedChannels;
+                document.getElementById('editChannelsModal').style.display = 'none';
+                
+                if (!channels[activeChannel]) {
+                    activeChannel = Object.keys(channels)[0];
+                }
+                renderChannels();
+                renderCart();
+            } else {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+        } catch (error) {
+            console.error('Error saving channels:', error);
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         }
-        renderChannels();
-        renderCart();
-        alert('บันทึกการแก้ไขช่องทางเรียบร้อยแล้ว');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      renderProducts();
-      renderChannels();
-      renderCart();
+      initializeData();
 
       const historyModal = document.getElementById('historyModal');
       const clearConfirmModal = document.getElementById('clearConfirmModal');
@@ -801,8 +827,9 @@
       const saveChannelsBtn = document.getElementById('saveChannelsBtn');
       const addChannelBtn = document.getElementById('addChannelBtn');
       
-      historyBtn.onclick = () => {
-        renderHistory();
+      historyBtn.onclick = async () => {
+        const history = await fetchHistory();
+        renderHistory(history);
         historyModal.style.display = "block";
       };
       
@@ -888,7 +915,7 @@
         exportHistoryToXLSX();
       };
 
-      document.getElementById('confirmBtn').onclick = () => {
+      document.getElementById('confirmBtn').onclick = async () => {
         if(Object.keys(cart).length === 0){
           alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน');
           return;
@@ -900,7 +927,7 @@
             const item = cart[id];
             const itemSubtotal = item.price * item.qty;
             subtotal += itemSubtotal;
-            itemsForSheet.push({ name: item.name, price: item.price, qty: item.qty });
+            itemsForSheet.push({ name: item.name, price: item.price, qty: item.qty, subtotal: itemSubtotal.toFixed(2) });
         }
         
         const feeRate = channels[activeChannel] || 0;
@@ -921,37 +948,28 @@
             items: itemsForSheet
         };
 
-        const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxayhaUhXR5udOt844eqtsvX3RLREBmZ4sYVm2Xa_B0SMZMImWXElVZBNg-vG3wk2UgKw/exec';
-        
-        fetch(appsScriptUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(orderData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(text) });
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'saveOrder', order: orderData })
+            });
+
+            if (response.ok) {
+                alert('บันทึกคำสั่งซื้อเรียบร้อยแล้ว');
+                // Clear cart
+                for (const id in cart) {
+                    delete cart[id];
+                }
+                renderCart();
+            } else {
+                const text = await response.text();
+                throw new Error(text);
             }
-            return response.text();
-        })
-        .then(text => {
-            alert('บันทึกคำสั่งซื้อเรียบร้อยแล้ว');
-            
-            // Save to local history as well
-            saveOrderToHistory(orderData);
-            
-            // Clear cart
-            for (const id in cart) {
-                delete cart[id];
-            }
-            renderCart();
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error:', error);
             alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
-        });
+        }
       };
     });
   </script>
