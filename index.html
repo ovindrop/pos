@@ -1160,10 +1160,8 @@ if (hasError) return;
         let finalTotal = subtotal - fee;
 
         const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
-        
-        // แก้ไขตรงนี้: เปลี่ยนรูปแบบการบันทึกวันที่ให้เป็นรูปแบบมาตรฐาน
-        const now = new Date();
-        const dt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        const tz = new Intl.DateTimeFormat('th-TH',{ dateStyle:'short', timeStyle:'short', timeZone:'Asia/Bangkok' });
+        const dt = tz.format(new Date());
 
         const orderData = {
           orderId: orderId,
