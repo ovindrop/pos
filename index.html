@@ -639,23 +639,16 @@ async function getSalesDataFromGoogleSheet(startDate, endDate) {
     }
 }
 
-function exportDataToXLSX(data) {
-    if (data.length === 0) {
-        alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
-        return;
-    }
-
-    const rows = [["Order ID","Datetime (Asia/Bangkok)","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
-    
-    // Group items by Order ID to handle multi-item orders
+// Grouping and Export Logic - Improved and more robust
+function groupSalesData(data) {
     const groupedData = {};
-    let currentOrderId = null;
+    let currentOrder = null;
 
-    data.forEach(item => {
-        const orderId = item["Order ID"];
-        if (orderId) {
-            currentOrderId = orderId;
-            groupedData[currentOrderId] = {
+    for (const item of data) {
+        const hasOrderId = !!item["Order ID"];
+        if (hasOrderId) {
+            // This is a new order, create a new entry
+            currentOrder = {
                 orderId: item["Order ID"],
                 datetime: item["Datetime"],
                 channel: item["Channel"],
@@ -663,31 +656,47 @@ function exportDataToXLSX(data) {
                 finalTotal: item["Final Total"],
                 items: []
             };
+            groupedData[currentOrder.orderId] = currentOrder;
         }
-        
-        if (currentOrderId && groupedData[currentOrderId]) {
-            groupedData[currentOrderId].items.push({
+
+        // Add the current item to the last known order
+        if (currentOrder) {
+            currentOrder.items.push({
                 name: item["Item Name"],
                 price: item["Price"],
                 qty: item["Quantity"],
                 subtotal: item["Total"]
             });
         }
-    });
+    }
+    return groupedData;
+}
 
-    for (const orderId in groupedData) {
+function exportDataToXLSX(data) {
+    if (data.length === 0) {
+        alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
+        return;
+    }
+    
+    const groupedData = groupSalesData(data);
+    
+    const rows = [["Order ID","Datetime","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
+    
+    const orderIds = Object.keys(groupedData).sort();
+    
+    for (const orderId of orderIds) {
         const order = groupedData[orderId];
         // Add the first item with all order details
         rows.push([
-            order["orderId"], 
-            order["datetime"],
-            order["channel"],
+            order.orderId, 
+            order.datetime,
+            order.channel,
             order.items[0].name, 
             order.items[0].price, 
             order.items[0].qty, 
             order.items[0].subtotal,
-            order["fee"],
-            order["finalTotal"]
+            order.fee,
+            order.finalTotal
         ]);
         
         // Add subsequent items without redundant order details
@@ -754,34 +763,8 @@ async function renderHistoryFromGoogleSheet() {
         return;
     }
 
-    // New logic to group sales data by order ID
-    const groupedData = {};
-    let currentOrderId = null;
-
-    salesData.forEach(item => {
-        const orderId = item["Order ID"];
-        if (orderId) {
-            currentOrderId = orderId;
-            groupedData[currentOrderId] = {
-                orderId: item["Order ID"],
-                datetime: item["Datetime"],
-                channel: item["Channel"],
-                fee: item["Fee"],
-                finalTotal: item["Final Total"],
-                items: []
-            };
-        }
-        
-        if (currentOrderId && groupedData[currentOrderId]) {
-            groupedData[currentOrderId].items.push({
-                name: item["Item Name"],
-                price: item["Price"],
-                qty: item["Quantity"],
-                subtotal: item["Total"]
-            });
-        }
-    });
-
+    const groupedData = groupSalesData(salesData);
+    
     historyContent.innerHTML = '';
     const orderIds = Object.keys(groupedData).sort().reverse();
 
@@ -792,7 +775,7 @@ async function renderHistoryFromGoogleSheet() {
         
         orderDiv.innerHTML = `
             <h4>รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
-            <p>วันที่: ${order.datetime || "ไม่ระบุ"}</p>
+            <p>วันที่: ${new Date(order.datetime).toLocaleString('th-TH') || "ไม่ระบุ"}</p>
             <p>ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
             <div class="history-detail-items">
                 <ul>
