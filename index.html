@@ -642,13 +642,13 @@ async function getSalesDataFromGoogleSheet(startDate, endDate) {
 // Grouping and Export Logic - Improved and more robust
 function groupSalesData(data) {
     const groupedData = {};
-    let currentOrder = null;
+    let lastOrderId = null;
 
     for (const item of data) {
-        const hasOrderId = !!item["Order ID"];
-        if (hasOrderId) {
-            // This is a new order, create a new entry
-            currentOrder = {
+        const orderId = item["Order ID"];
+        if (orderId && typeof orderId === 'string' && orderId.trim() !== "") {
+            lastOrderId = orderId;
+            groupedData[lastOrderId] = {
                 orderId: item["Order ID"],
                 datetime: item["Datetime"],
                 channel: item["Channel"],
@@ -656,12 +656,10 @@ function groupSalesData(data) {
                 finalTotal: item["Final Total"],
                 items: []
             };
-            groupedData[currentOrder.orderId] = currentOrder;
         }
 
-        // Add the current item to the last known order
-        if (currentOrder) {
-            currentOrder.items.push({
+        if (lastOrderId && groupedData[lastOrderId]) {
+            groupedData[lastOrderId].items.push({
                 name: item["Item Name"],
                 price: item["Price"],
                 qty: item["Quantity"],
@@ -773,9 +771,20 @@ async function renderHistoryFromGoogleSheet() {
         const orderDiv = document.createElement('div');
         orderDiv.className = 'history-detail';
         
+        // Use toLocaleString to format date for display
+        const displayDate = new Date(order.datetime).toLocaleString('th-TH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            timeZone: 'Asia/Bangkok'
+        });
+
         orderDiv.innerHTML = `
             <h4>รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
-            <p>วันที่: ${new Date(order.datetime).toLocaleString('th-TH') || "ไม่ระบุ"}</p>
+            <p>วันที่: ${displayDate || "ไม่ระบุ"}</p>
             <p>ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
             <div class="history-detail-items">
                 <ul>
@@ -1160,7 +1169,7 @@ if (hasError) return;
         let finalTotal = subtotal - fee;
 
         const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
-        // แก้ไข: ส่งวันที่ในรูปแบบ ISO 8601 ที่เป็นมาตรฐาน
+        // แก้ไข: ใช้รูปแบบ ISO ที่แน่นอน
         const dt = new Date().toISOString();
         
         const orderData = {
