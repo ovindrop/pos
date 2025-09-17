@@ -6,285 +6,70 @@
   <title>POS Ovindrop Cyanotype</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    :root {
-      --radius: 10px;
-      --muted: #666;
-      --accent: #1890ff;
-    }
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      margin: 16px;
-      background: #f6f7fb;
-      color: #111;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    header h1 {
-      font-size: 18px;
-      margin: 0;
-    }
-
-    main {
-      display: grid;
-      grid-template-columns: 1fr 420px;
-      gap: 20px;
-    }
-    @media (max-width: 980px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-    }
+    :root{ --radius:10px;
+--muted:#666; --accent:#1890ff; }
+    body{ font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:16px; background:#f6f7fb; color:#111;
+}
+    header{ display:flex; align-items:center; justify-content: space-between; gap:12px; margin-bottom:12px; }
+    header h1{ font-size:18px; margin:0;
+}
+    main{ display:grid; grid-template-columns: 1fr 420px; gap:20px; }
+    @media (max-width:980px){ main{ grid-template-columns: 1fr;
+} }
 
     /* product grid */
-    #productCategories .category {
-      background: #fff;
-      padding: 14px;
-      border-radius: var(--radius);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      margin-bottom: 12px;
-    }
-    #productCategories .category h2 {
-      margin: 0 0 10px 0;
-      font-size: 18px;
-    }
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-    }
-    .product-item {
-      background: #f7f7f7;
-      border-radius: var(--radius);
-      text-align: center;
-      padding: 12px;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .product-item:hover {
-      transform: scale(1.03);
-    }
-    .product-item h3 {
-      font-size: 14px;
-      margin: 0;
-      word-wrap: break-word;
-    }
-    .product-item p {
-      font-size: 12px;
-      color: var(--muted);
-      margin: 4px 0 0 0;
-    }
+    #productCategories .category { background:#fff; padding:14px; border-radius:var(--radius);
+box-shadow:0 2px 8px rgba(0,0,0,.04); margin-bottom:12px; }
+    #productCategories .category h2{ margin:0 0 10px 0; font-size:18px; }
+    .product-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; }
+    .product-item { background:#f7f7f7; border-radius:var(--radius); text-align:center; padding:12px; cursor:pointer; transition:transform .2s; }
+    .product-item:hover { transform:scale(1.03); }
+    .product-item h3{ font-size:14px; margin:0; word-wrap:break-word; }
+    .product-item p{ font-size:12px; color:var(--muted); margin:4px 0 0 0; }
 
     /* cart */
-    #cart {
-      position: sticky;
-      top: 16px;
-      background: #fff;
-      padding: 16px;
-      border-radius: var(--radius);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      display: flex;
-      flex-direction: column;
-      height: fit-content;
-    }
-    #cart h2 {
-      margin: 0 0 10px 0;
-      font-size: 18px;
-    }
-    #cart-items {
-      flex-grow: 1;
-      overflow-y: auto;
-      max-height: 400px;
-      margin-bottom: 16px;
-    }
-    #cart-items .cart-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px dashed #eee;
-    }
-    #cart-items .cart-item:last-child {
-      border-bottom: none;
-    }
-    .cart-item-info {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .cart-item-info span {
-      font-size: 14px;
-      font-weight: bold;
-    }
-    .cart-item-info small {
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .cart-item-actions {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
-    .cart-item-actions button {
-      background: #eee;
-      border: none;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
-    }
-    .cart-item-actions .remove-btn {
-      color: #e53935;
-    }
-    .cart-item-actions .qty {
-      min-width: 20px;
-      text-align: center;
-    }
+    #cart{ position:sticky; top:16px; background:#fff; padding:16px; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.04); display:flex; flex-direction:column; height:fit-content; }
+    #cart h2{ margin:0 0 10px 0; font-size:18px; }
+    #cart-items{ flex-grow:1; overflow-y:auto; max-height:400px; margin-bottom:16px; }
+    #cart-items .cart-item{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed #eee; }
+    #cart-items .cart-item:last-child{ border-bottom:none; }
+    .cart-item-info{ flex-grow:1; display:flex; flex-direction:column; }
+    .cart-item-info span{ font-size:14px; font-weight:bold; }
+    .cart-item-info small{ font-size:12px; color:var(--muted); }
+    .cart-item-actions{ display:flex; gap:5px; align-items:center; }
+    .cart-item-actions button{ background:#eee; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:16px; line-height:1; }
+    .cart-item-actions .remove-btn{ color:#e53935; }
+    .cart-item-actions .qty{ min-width:20px; text-align:center; }
 
     /* Summary */
-    #summary {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      border-top: 1px solid #ddd;
-      padding-top: 12px;
-      margin-top: auto;
-    }
-    #summary .summary-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    #summary .summary-row span:last-child {
-      font-weight: bold;
-    }
-    #summary .summary-row.total-row {
-      font-size: 18px;
-    }
-    #channel-select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
+    #summary{ display:flex; flex-direction:column; gap:8px; border-top:1px solid #ddd; padding-top:12px; margin-top:auto; }
+    #summary .summary-row{ display:flex; justify-content:space-between; align-items:center; }
+    #summary .summary-row span:last-child{ font-weight:bold; }
+    #summary .summary-row.total-row{ font-size:18px; }
+    #channel-select{ width:100%; padding:8px; border-radius:5px; border:1px solid #ccc; }
 
     /* buttons */
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-    .btn-confirm {
-      background: var(--accent);
-      color: #fff;
-      margin-top: 10px;
-    }
-    .btn-confirm:hover {
-      background: #007bff;
-    }
-    .btn-secondary {
-      background: #f0f0f0;
-      color: #333;
-      margin-top: 10px;
-    }
-    .btn-secondary:hover {
-      background: #e0e0e0;
-    }
+    .btn{ display:block; width:100%; padding:12px; border:none; border-radius:var(--radius); cursor:pointer; font-weight:bold; transition:background .2s; }
+    .btn-confirm{ background:var(--accent); color:#fff; margin-top:10px; }
+    .btn-confirm:hover{ background:#007bff; }
+    .btn-secondary{ background:#f0f0f0; color:#333; margin-top:10px; }
+    .btn-secondary:hover{ background:#e0e0e0; }
 
     /* modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.4);
-    }
-    .modal-content {
-      background-color: #fefefe;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: var(--radius);
-      width: 90%;
-      max-width: 600px;
-      position: relative;
-    }
-    .close-btn {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      cursor: pointer;
-    }
-    .close-btn:hover,
-    .close-btn:focus {
-      color: black;
-      text-decoration: none;
-    }
-    .history-detail {
-      background: #f7f7f7;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: var(--radius);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-    .history-detail h4 {
-      margin-top: 0;
-      font-size: 16px;
-    }
-    .history-detail-items {
-      margin-top: 10px;
-    }
-    .history-detail-items ul {
-      list-style-type: none;
-      padding-left: 0;
-      margin: 0;
-    }
-    .history-detail-items li {
-      font-size: 14px;
-      color: #555;
-    }
-    .summary-form-group {
-      margin-bottom: 15px;
-    }
-    .summary-form-group label {
-      display: block;
-      margin-bottom: 5px;
-    }
-    .summary-form-group input {
-      width: calc(100% - 20px);
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    #historyFromSheetContent,
-    #summaryFromSheetContent {
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-    .loader {
-      display: none;
-      justify-content: center;
-      align-items: center;
-      height: 100px;
-    }
+    .modal{ display:none; position:fixed; z-index:1; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,.4); }
+    .modal-content{ background-color:#fefefe; margin:10% auto; padding:20px; border-radius:var(--radius); width:90%; max-width:600px; position:relative; }
+    .close-btn{ color:#aaa; float:right; font-size:28px; font-weight:bold; position:absolute; top:10px; right:20px; cursor:pointer; }
+    .close-btn:hover,.close-btn:focus{ color:black; text-decoration:none; }
+    .history-detail{ background:#f7f7f7; padding:15px; margin-bottom:15px; border-radius:var(--radius); box-shadow:0 1px 3px rgba(0,0,0,.05); }
+    .history-detail h4{ margin-top:0; font-size:16px; }
+    .history-detail-items{ margin-top:10px; }
+    .history-detail-items ul{ list-style-type:none; padding-left:0; margin:0; }
+    .history-detail-items li{ font-size:14px; color:#555; }
+    .summary-form-group{ margin-bottom:15px; }
+    .summary-form-group label{ display:block; margin-bottom:5px; }
+    .summary-form-group input{ width:calc(100% - 20px); padding:10px; border:1px solid #ccc; border-radius:5px; }
+    #historyFromSheetContent,#summaryFromSheetContent{ max-height:70vh; overflow-y:auto; }
+    .loader{ display:none; justify-content:center; align-items:center; height:100px; }
   </style>
 </head>
 
@@ -361,30 +146,40 @@
       "https://script.google.com/macros/s/AKfycbybJcY17TEwiZ_OOyXBBBBrWSLgTY5EoHgmV8Le9_m2LnGYiB4A79MZOxuulCdg_zov7g/exec";
 
     const products = {
-      "สีน้ำ Cyanotype Ovindrop": [
-        { id: "p1", name: "สีน้ำ A", price: 150 },
-        { id: "p2", name: "สีน้ำ B", price: 150 },
-        { id: "p3", name: "สีน้ำ C", price: 150 },
-      ],
-      "ชุดทดลอง": [
-        { id: "p4", name: "ชุดทดลอง A", price: 350 },
-        { id: "p5", name: "ชุดทดลอง B", price: 350 },
-      ],
-      "กระดาษ A4": [
-        { id: "p6", name: "กระดาษ A4", price: 50 },
-        { id: "p7", name: "กระดาษ A3", price: 100 },
-      ],
+      "แยกส่วน": {
+        "50mL": { price: 149, icon: "https://img.icons8.com/color/96/test-tube.png", profit:97 },
+        "100mL": { price: 269, icon: "https://img.icons8.com/color/96/test-tube.png", profit:193 },
+        "210mL": { price: 529, icon: "https://img.icons8.com/color/96/test-tube.png", profit:341 }
+      },
+      "ผสมพร้อมใช้": {
+        "100mL": { price: 149, icon: "https://img.icons8.com/color/96/beaker.png", profit:97 },
+        "100mL+อุปกรณ์": { price: 169, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "200mL": { price: 269, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "200mL+อุปกรณ์": { price: 289, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "500mL": { price: 549, icon: "https://img.icons8.com/color/96/beaker.png", profit:null },
+        "500mL+อุปกรณ์": { price: 569, icon: "https://img.icons8.com/color/96/beaker.png", profit:null }
+      },
+      "Box set": {
+        "100mL": { price: 229, icon: "https://img.icons8.com/color/96/box.png", profit:null },
+        "200mL": { price: 349, icon: "https://img.icons8.com/color/96/box.png", profit:null }
+      },
+      "แบบผง": {
+        "Total 500mL": { price: 849, icon: "https://img.icons8.com/color/96/powder.png", profit:null },
+        "Total 1L": { price: 1690, icon: "https://img.icons8.com/color/96/powder.png", profit:null }
+      }
     };
+    
 
     const channels = {
-      Shopee: 0.1,
-      Lazada: 0.1,
-      Tiktok: 0.1,
-      Other: 0,
+      "หน้าร้าน": 0,
+      "Shopee": 0.13,
+      "Lazada": 0.1,
+      "Tiktok": 0.1,
+      "Other": 0,
     };
 
     let cart = {};
-    let activeChannel = "Other";
+    let activeChannel = "หน้าร้าน";
 
     function renderProducts() {
       const container = document.getElementById("productCategories");
@@ -393,13 +188,14 @@
         categoryDiv.className = "category";
         categoryDiv.innerHTML = `<h2>${category}</h2><div class="product-grid"></div>`;
         const grid = categoryDiv.querySelector(".product-grid");
-        products[category].forEach((product) => {
+        for (const subcategory in products[category]) {
+          const product = products[category][subcategory];
           const productItem = document.createElement("div");
           productItem.className = "product-item";
-          productItem.innerHTML = `<h3>${product.name}</h3><p>${product.price} ฿</p>`;
-          productItem.onclick = () => addToCart(product);
+          productItem.innerHTML = `<h3>${subcategory}</h3><p>${product.price} ฿</p>`;
+          productItem.onclick = () => addToCart({ id: subcategory, name: `${category} ${subcategory}`, price: product.price });
           grid.appendChild(productItem);
-        });
+        }
         container.appendChild(categoryDiv);
       }
     }
@@ -546,7 +342,7 @@
       const historyModal = document.getElementById('historyFromSheetModal');
       const historyContent = document.getElementById('historyFromSheetContent');
       const historyLoader = document.getElementById('historyLoader');
-
+    
       historyModal.style.display = 'block';
       historyContent.style.display = 'none';
       historyLoader.style.display = 'flex';
@@ -555,28 +351,35 @@
       
       historyLoader.style.display = 'none';
       historyContent.style.display = 'block';
-
+    
       if (salesData.length === 0) {
           historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>';
           return;
       }
-
+    
+      // สร้างออบเจ็กต์สำหรับจัดกลุ่มข้อมูล
       const groupedData = {};
       salesData.forEach(item => {
           const orderId = item["Order ID"];
-          if (!orderId) return;
-
+          // ข้ามรายการที่ไม่มี Order ID เพื่อป้องกันข้อผิดพลาด
+          if (!orderId) {
+              return;
+          }
+    
+          // ถ้ายังไม่มีกลุ่มของ Order ID นี้ ให้สร้างขึ้นมา
           if (!groupedData[orderId]) {
               groupedData[orderId] = {
                   orderId: orderId,
-                  datetime: item["Datetime"],
+                  // ใช้ค่าจากรายการแรกเพื่อแสดงข้อมูลหลักของออเดอร์
+                  datetime: item["Datetime"], 
                   channel: item["Channel"],
                   fee: item["Fee"],
                   finalTotal: item["Final Total"],
-                  items: []
+                  items: [] // เตรียมอาร์เรย์สำหรับรายการสินค้า
               };
           }
           
+          // เพิ่มรายการสินค้าเข้าไปในอาร์เรย์ของกลุ่มนั้นๆ
           groupedData[orderId].items.push({
               name: item["Item Name"],
               price: item["Price"],
@@ -584,9 +387,10 @@
               subtotal: item["Total"]
           });
       });
-
+    
       historyContent.innerHTML = '';
       const orderIds = Object.keys(groupedData).sort().reverse();
+    
       orderIds.forEach(orderId => {
           const order = groupedData[orderId];
           const orderDiv = document.createElement('div');
@@ -598,11 +402,11 @@
               <div class="history-detail-items">
                   <ul>
                       ${order.items.map(item => `
-                          <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
+                          <li>${item.name || "ไม่ระบุ"} (${item.qty || "0"} ชิ้น) - ${parseFloat(item.subtotal || "0").toFixed(2)} ฿</li>
                       `).join('')}
                   </ul>
               </div>
-              <p><strong>ยอดที่ได้รับ: ${order.finalTotal || "0"} ฿</strong></p>
+              <p><strong>ยอดที่ได้รับ: ${parseFloat(order.finalTotal || "0").toFixed(2)} ฿</strong></p>
           `;
           historyContent.appendChild(orderDiv);
       });
@@ -636,10 +440,10 @@
       let totalItems = 0;
 
       salesData.forEach(item => {
-        totalSales += parseFloat(item["Total"]);
-        totalFee += parseFloat(item["Fee"]);
-        totalFinal += parseFloat(item["Final Total"]);
-        totalItems += parseFloat(item["Quantity"]);
+        totalSales += parseFloat(item["Total"] || "0");
+        totalFee += parseFloat(item["Fee"] || "0");
+        totalFinal += parseFloat(item["Final Total"] || "0");
+        totalItems += parseFloat(item["Quantity"] || "0");
       });
 
       const summaryHtml = `
