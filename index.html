@@ -373,11 +373,11 @@
         }
     }
     // Function to get sales data from Google Sheet
-    async function getSalesDataFromGoogleSheet(startDate, endDate) {
+    async function getSalesDataFromGoogleSheet() {
         try {
             const response = await fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'getSalesData', startDate: startDate, endDate: endDate }),
+                body: JSON.stringify({ action: 'getSalesData' }),
                 headers: {
                     'Content-Type': 'text/plain;charset=utf-8',
                 },
@@ -394,81 +394,30 @@
             return [];
         }
     }
-    function groupSalesData(data) {
-        const groupedData = {};
-        let lastOrderId = null;
-        for (const item of data) {
-            const orderId = item["Order ID"];
-            if (orderId && typeof orderId === 'string' && orderId.trim() !== "") {
-                lastOrderId = orderId;
-                groupedData[lastOrderId] = {
-                    orderId: item["Order ID"],
-                    datetime: item["Datetime"],
-                    channel: item["Channel"],
-                    fee: item["Fee"],
-                    finalTotal: item["Final Total"],
-                    items: []
-                };
-            }
-            if (lastOrderId && groupedData[lastOrderId]) {
-                groupedData[lastOrderId].items.push({
-                    name: item["Item Name"],
-                    price: item["Price"],
-                    qty: item["Quantity"],
-                    subtotal: item["Total"]
-                });
-            }
-        }
-        return groupedData;
-    }
     function exportDataToXLSX(data) {
         if (data.length === 0) {
-            alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
+            alert('ไม่พบข้อมูลที่จะสรุปยอด');
             return;
         }
-        const groupedData = groupSalesData(data);
         const rows = [["Order ID","Datetime","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
-        const orderIds = Object.keys(groupedData).sort();
-        for (const orderId of orderIds) {
-            const order = groupedData[orderId];
+        data.forEach(item => {
             rows.push([
-                order.orderId, 
-                order.datetime,
-                order.channel,
-                order.items[0].name, 
-                order.items[0].price, 
-                order.items[0].qty, 
-                order.items[0].subtotal,
-                order.fee,
-                order.finalTotal
+                item["Order ID"],
+                item["Datetime"],
+                item["Channel"],
+                item["Item Name"],
+                item["Price"],
+                item["Quantity"],
+                item["Total"],
+                item["Fee"],
+                item["Final Total"]
             ]);
-            for (let i = 1; i < order.items.length; i++) {
-                const item = order.items[i];
-                rows.push(["", "", "", item.name, item.price, item.qty, item.subtotal, "", ""]);
-            }
-        }
+        });
         const ws = XLSX.utils.aoa_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "สรุปยอดการขาย");
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        let filename = `สรุปยอด_${startDate}_ถึง_${endDate}.xlsx`;
+        let filename = `สรุปยอด_การขาย.xlsx`;
         XLSX.writeFile(wb, filename);
-    }
-    async function handleFetchAndExport() {
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        if (!startDate || !endDate) {
-            alert('กรุณาเลือกช่วงเวลาให้ครบถ้วน');
-            return;
-        }
-        document.getElementById('fetchAndExportBtn').textContent = "กำลังดึงข้อมูล...";
-        document.getElementById('fetchAndExportBtn').disabled = true;
-        const salesData = await getSalesDataFromGoogleSheet(startDate, endDate);
-        document.getElementById('fetchAndExportBtn').textContent = "ดึงข้อมูลและ Export";
-        document.getElementById('fetchAndExportBtn').disabled = false;
-        exportDataToXLSX(salesData);
-        document.getElementById('summarizeModal').style.display = 'none';
     }
     async function renderHistoryFromGoogleSheet() {
         const historyModal = document.getElementById('historyFromSheetModal');
@@ -477,43 +426,57 @@
         historyModal.style.display = 'block';
         historyContent.style.display = 'none';
         historyLoader.style.display = 'flex';
-        const salesData = await getSalesDataFromGoogleSheet("1900-01-01", "2999-12-31");
+        const salesData = await getSalesDataFromGoogleSheet();
         historyLoader.style.display = 'none';
         historyContent.style.display = 'block';
         if (salesData.length === 0) {
             historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>';
             return;
         }
-        const groupedData = groupSalesData(salesData);
         historyContent.innerHTML = '';
-        const orderIds = Object.keys(groupedData).sort().reverse();
-        orderIds.forEach(orderId => {
-            const order = groupedData[orderId];
-            const orderDiv = document.createElement('div');
-            orderDiv.className = 'history-detail';
-            const displayDate = new Date(order.datetime).toLocaleString('th-TH', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                timeZone: 'Asia/Bangkok'
-            });
-            orderDiv.innerHTML = `
-                <h4>รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
-                <p>วันที่: ${displayDate || "ไม่ระบุ"}</p>
-                <p>ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
-                <div class="history-detail-items">
-                    <ul>
-                        ${order.items.map(item => `
-                            <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
-                        `).join('')}
-                    </ul>
-                </div>
-                <p><strong>ยอดที่ได้รับ: ${order.finalTotal || "0"} ฿</strong></p>
-            `;
-            historyContent.appendChild(orderDiv);
+        let currentOrderId = null;
+        salesData.forEach(item => {
+            // Check if this is the start of a new order
+            if (item["Order ID"] && item["Order ID"] !== "" && item["Order ID"] !== currentOrderId) {
+                currentOrderId = item["Order ID"];
+                const orderDiv = document.createElement('div');
+                orderDiv.className = 'history-detail';
+                // Try to parse the date string. If it fails, display the raw string.
+                let displayDate = item["Datetime"] || "ไม่ระบุ";
+                try {
+                    const dateObj = new Date(item["Datetime"]);
+                    if (!isNaN(dateObj.getTime())) { // Check if the date is valid
+                         displayDate = dateObj.toLocaleString('th-TH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: 'numeric',
+                            timeZone: 'Asia/Bangkok'
+                        });
+                    }
+                } catch (e) {
+                    console.error("Invalid Date format:", item["Datetime"]);
+                }
+                orderDiv.innerHTML = `
+                    <h4>รายการที่: ${currentOrderId}</h4>
+                    <p>วันที่: ${displayDate}</p>
+                    <p>ช่องทาง: ${item["Channel"] || "ไม่ระบุ"}</p>
+                    <div class="history-detail-items">
+                        <ul></ul>
+                    </div>
+                    <p><strong>ยอดที่ได้รับ: ${item["Final Total"] || "0"} ฿</strong></p>
+                `;
+                historyContent.appendChild(orderDiv);
+            }
+            // Add the current item to the last order's item list
+            if (currentOrderId) {
+                const lastOrderDiv = historyContent.lastElementChild;
+                const itemsList = lastOrderDiv.querySelector('ul');
+                const itemLi = document.createElement('li');
+                itemLi.textContent = `${item["Item Name"] || "ไม่ระบุ"} (${item["Quantity"]} ชิ้น) - รวม: ${item["Total"] || "0"} ฿`;
+                itemsList.appendChild(itemLi);
+            }
         });
     }
     function renderEditableProducts() {
@@ -788,10 +751,10 @@
               alert('ข้อมูลไม่ถูกต้อง');
           }
       };
-      summarizeBtn.onclick = () => {
-          summarizeModal.style.display = 'block';
+      summarizeBtn.onclick = async () => {
+        const salesData = await getSalesDataFromGoogleSheet();
+        exportDataToXLSX(salesData);
       };
-      fetchAndExportBtn.onclick = handleFetchAndExport;
       document.getElementById('confirmBtn').onclick = async () => {
         if(Object.keys(cart).length === 0){
           alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน');
