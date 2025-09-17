@@ -649,11 +649,13 @@ function exportDataToXLSX(data) {
     
     // Group items by Order ID to handle multi-item orders
     const groupedData = {};
-    let lastOrderId = null;
+    let currentOrderId = null;
+
     data.forEach(item => {
-        const orderId = item["Order ID"] || lastOrderId;
-        if (orderId && !groupedData[orderId]) {
-            groupedData[orderId] = {
+        const orderId = item["Order ID"];
+        if (orderId) {
+            currentOrderId = orderId;
+            groupedData[currentOrderId] = {
                 orderId: item["Order ID"],
                 datetime: item["Datetime"],
                 channel: item["Channel"],
@@ -663,15 +665,14 @@ function exportDataToXLSX(data) {
             };
         }
         
-        if (orderId && groupedData[orderId]) {
-            groupedData[orderId].items.push({
+        if (currentOrderId && groupedData[currentOrderId]) {
+            groupedData[currentOrderId].items.push({
                 name: item["Item Name"],
                 price: item["Price"],
                 qty: item["Quantity"],
                 subtotal: item["Total"]
             });
         }
-        lastOrderId = orderId;
     });
 
     for (const orderId in groupedData) {
@@ -755,13 +756,14 @@ async function renderHistoryFromGoogleSheet() {
 
     // New logic to group sales data by order ID
     const groupedData = {};
-    let lastOrderId = null;
+    let currentOrderId = null;
 
     salesData.forEach(item => {
-        const orderId = item["Order ID"] || lastOrderId;
-        if (orderId && !groupedData[orderId]) {
-            groupedData[orderId] = {
-                orderId: orderId,
+        const orderId = item["Order ID"];
+        if (orderId) {
+            currentOrderId = orderId;
+            groupedData[currentOrderId] = {
+                orderId: item["Order ID"],
                 datetime: item["Datetime"],
                 channel: item["Channel"],
                 fee: item["Fee"],
@@ -770,15 +772,14 @@ async function renderHistoryFromGoogleSheet() {
             };
         }
         
-        if (orderId && groupedData[orderId]) {
-            groupedData[orderId].items.push({
+        if (currentOrderId && groupedData[currentOrderId]) {
+            groupedData[currentOrderId].items.push({
                 name: item["Item Name"],
                 price: item["Price"],
                 qty: item["Quantity"],
                 subtotal: item["Total"]
             });
         }
-        lastOrderId = orderId;
     });
 
     historyContent.innerHTML = '';
