@@ -652,15 +652,25 @@ function exportDataToXLSX(data) {
     let lastOrderId = null;
     data.forEach(item => {
         const orderId = item["Order ID"] || lastOrderId;
-        if (!groupedData[orderId]) {
-            groupedData[orderId] = { ...item, items: [] };
+        if (orderId && !groupedData[orderId]) {
+            groupedData[orderId] = {
+                orderId: item["Order ID"],
+                datetime: item["Datetime"],
+                channel: item["Channel"],
+                fee: item["Fee"],
+                finalTotal: item["Final Total"],
+                items: []
+            };
         }
-        groupedData[orderId].items.push({
-            name: item["Item Name"],
-            price: item["Price"],
-            qty: item["Quantity"],
-            subtotal: item["Total"]
-        });
+        
+        if (orderId && groupedData[orderId]) {
+            groupedData[orderId].items.push({
+                name: item["Item Name"],
+                price: item["Price"],
+                qty: item["Quantity"],
+                subtotal: item["Total"]
+            });
+        }
         lastOrderId = orderId;
     });
 
@@ -668,15 +678,15 @@ function exportDataToXLSX(data) {
         const order = groupedData[orderId];
         // Add the first item with all order details
         rows.push([
-            order["Order ID"], 
-            order["Datetime"],
-            order["Channel"],
+            order["orderId"], 
+            order["datetime"],
+            order["channel"],
             order.items[0].name, 
             order.items[0].price, 
             order.items[0].qty, 
             order.items[0].subtotal,
-            order["Fee"],
-            order["Final Total"]
+            order["fee"],
+            order["finalTotal"]
         ]);
         
         // Add subsequent items without redundant order details
