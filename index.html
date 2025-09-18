@@ -595,6 +595,47 @@ tbody.querySelectorAll('.btn-remove').forEach(btn => {
       });
 }
 
+// Group flat sheet rows into orders without losing items
+function groupSalesRows(rows) {
+  const grouped = {};
+  let currentOrderId = null;
+
+  (rows || []).forEach(r => {
+    const explicitOrderId = r["Order ID"];
+    const orderId = explicitOrderId || currentOrderId;
+    if (!orderId) return;
+    currentOrderId = orderId;
+
+    if (!grouped[orderId]) {
+      grouped[orderId] = {
+        orderId,
+        datetime: r["Datetime"] || "",
+        channel: r["Channel"] || "",
+        fee: r["Fee"] ?? 0,
+        finalTotal: r["Final Total"] ?? 0,
+        items: []
+      };
+    } else {
+      if (!grouped[orderId].datetime && r["Datetime"]) grouped[orderId].datetime = r["Datetime"];
+      if (!grouped[orderId].channel && r["Channel"]) grouped[orderId].channel = r["Channel"];
+      if ((grouped[orderId].fee === 0 || grouped[orderId].fee === "") && (r["Fee"] ?? "") !== "") grouped[orderId].fee = r["Fee"];
+      if ((grouped[orderId].finalTotal === 0 || grouped[orderId].finalTotal === "") && (r["Final Total"] ?? "") !== "") grouped[orderId].finalTotal = r["Final Total"];
+    }
+
+    const itemName = r["Item Name"];
+    if (itemName) {
+      grouped[orderId].items.push({
+        name: itemName,
+        price: Number(r["Price"] ?? 0),
+        qty: Number(r["Quantity"] ?? 0),
+        subtotal: Number(r["Total"] ?? 0)
+      });
+    }
+  });
+
+  return grouped;
+}
+
 // Function to save order to Google Sheet
 async function saveOrderToGoogleSheet(order) {
     try {
@@ -640,77 +681,47 @@ async function getSalesDataFromGoogleSheet(startDate, endDate) {
 }
 
 function exportDataToXLSX(data) {
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
         return;
     }
 
     const rows = [["Order ID","Datetime (Asia/Bangkok)","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
-    
-    // Group items by Order ID to handle multi-item orders
-    const groupedData = {};
-    let currentOrderId = null;
+    const groupedData = groupSalesRows(data);
 
-    data.forEach(item => {
-        const orderId = item["Order ID"];
-        if (orderId) {
-            currentOrderId = orderId;
-            groupedData[currentOrderId] = {
-                orderId: item["Order ID"],
-                datetime: item["Datetime"],
-                channel: item["Channel"],
-                fee: item["Fee"],
-                finalTotal: item["Final Total"],
-                items: []
-            };
+    const orderIds = Object.keys(groupedData).sort();
+    orderIds.forEach(orderId => {
+        const order = groupedData[orderId];
+        const items = order.items || [];
+
+        if (items.length === 0) {
+            rows.push([
+                order.orderId || "", order.datetime || "", order.channel || "",
+                "", "", "", "",
+                order.fee ?? "", order.finalTotal ?? ""
+            ]);
+            return;
         }
-        
-        if (currentOrderId && groupedData[currentOrderId]) {
-            groupedData[currentOrderId].items.push({
-                name: item["Item Name"],
-                price: item["Price"],
-                qty: item["Quantity"],
-                subtotal: item["Total"]
-            });
+
+        rows.push([
+            order.orderId || "", order.datetime || "", order.channel || "",
+            items[0].name, items[0].price, items[0].qty, items[0].subtotal,
+            order.fee ?? "", order.finalTotal ?? ""
+        ]);
+
+        for (let i = 1; i < items.length; i++) {
+            const it = items[i];
+            rows.push(["", "", "", it.name, it.price, it.qty, it.subtotal, "", ""]);
         }
     });
 
-    for (const orderId in groupedData) {
-        const order = groupedData[orderId];
-        // Add the first item with all order details
-        rows.push([
-            order["orderId"], 
-            order["datetime"],
-            order["channel"],
-            order.items[0].name, 
-            order.items[0].price, 
-            order.items[0].qty, 
-            order.items[0].subtotal,
-            order["fee"],
-            order["finalTotal"]
-        ]);
-        
-        // Add subsequent items without redundant order details
-        for (let i = 1; i < order.items.length; i++) {
-            const item = order.items[i];
-            rows.push([
-                "", "", "", 
-                item.name, 
-                item.price, 
-                item.qty, 
-                item.subtotal,
-                "", ""
-            ]);
-        }
-    }
-    
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "สรุปยอดการขาย");
     
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    let filename = `สรุปยอด_${startDate}_ถึง_${endDate}.xlsx`;
+    const filename = `สรุปยอด_${startDate}_ถึง_${endDate}.xlsx`;
     XLSX.writeFile(wb, filename);
 }
 
@@ -749,38 +760,12 @@ async function renderHistoryFromGoogleSheet() {
     historyLoader.style.display = 'none';
     historyContent.style.display = 'block';
 
-    if (salesData.length === 0) {
+    if (!salesData || salesData.length === 0) {
         historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>';
         return;
     }
 
-    // New logic to group sales data by order ID
-    const groupedData = {};
-    let currentOrderId = null;
-
-    salesData.forEach(item => {
-        const orderId = item["Order ID"];
-        if (orderId) {
-            currentOrderId = orderId;
-            groupedData[currentOrderId] = {
-                orderId: item["Order ID"],
-                datetime: item["Datetime"],
-                channel: item["Channel"],
-                fee: item["Fee"],
-                finalTotal: item["Final Total"],
-                items: []
-            };
-        }
-        
-        if (currentOrderId && groupedData[currentOrderId]) {
-            groupedData[currentOrderId].items.push({
-                name: item["Item Name"],
-                price: item["Price"],
-                qty: item["Quantity"],
-                subtotal: item["Total"]
-            });
-        }
-    });
+    const groupedData = groupSalesRows(salesData);
 
     historyContent.innerHTML = '';
     const orderIds = Object.keys(groupedData).sort().reverse();
@@ -796,7 +781,7 @@ async function renderHistoryFromGoogleSheet() {
             <p>ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
             <div class="history-detail-items">
                 <ul>
-                    ${order.items.map(item => `
+                    ${(order.items || []).map(item => `
                         <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
                     `).join('')}
                 </ul>
