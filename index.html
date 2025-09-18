@@ -158,6 +158,28 @@ margin-bottom: 10px; }
     #summarizeModal .modal-content { max-width: 520px; }
     #summarizeModal .date-input { padding:8px 10px; border:1px solid #ddd; border-radius:6px; }
     #fetchAndExportBtn { padding:12px 18px; font-weight:700; border-radius:8px; font-size:15px; }
+
+    /* Edit Products Modal - improved layout */
+    #editProductsModal .modal-content { max-height: 90vh; display:flex; flex-direction:column; }
+    #editProductsScroll { overflow-y:auto; padding-right: 10px; }
+    .edit-list-head { display:grid; grid-template-columns: 120px 1fr 120px 120px 40px; gap:10px; margin:6px 0 8px 0; font-weight:700; color:var(--muted); align-items:center; }
+    .edit-category-section .product-list { margin-top:6px; }
+    .product-list-item { display:grid; grid-template-columns: 120px 1fr 120px 120px 40px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    .product-icon-upload { display:flex; align-items:center; gap:10px; }
+    .product-icon-upload img { width:40px; height:40px; object-fit:contain; border:1px solid #eee; border-radius:8px; background:#fff; }
+    .product-icon-upload input[type="file"] { width:100%; }
+    .product-input-group { display:grid; grid-template-columns: 1fr 120px 120px; gap:10px; align-items:center; }
+    .product-input-group input { padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+
+    .edit-category-header { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .edit-category-header .category-name-group { display:flex; align-items:center; gap:8px; }
+    .edit-category-header .category-name-group input { font-size:16px; font-weight:bold; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+
+    /* Edit Channels Modal - improved layout */
+    .chan-head { display:grid; grid-template-columns: 1fr 160px 40px; gap:10px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
+    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: 1fr 160px 40px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    #editChannelsContainer .product-input-group { display:contents; }
+    #editChannelsContainer input[type="text"], #editChannelsContainer input[type="number"] { width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
   </style>
 </head>
 <body>
@@ -255,14 +277,7 @@ justify-content:flex-end; margin-top:20px;">
     <div class="modal-content">
         <span class="close channels-close">&times;</span>
         <h2>แก้ไขช่องทางการสั่งซื้อ</h2>
-        <div id="editChannelsContainer">
-            <div style="display: flex;
-gap: 8px; font-weight: bold; margin-bottom: 10px;">
-                <div style="flex: 2;">ช่องทางการสั่งซื้อ</div>
-                <div style="flex: 1;">ค่าธรรมเนียม (%)</div>
-                <div style="width: 30px;"></div>
-            </div>
-        </div>
+        <div id="editChannelsContainer"></div>
         <button id="addChannelBtn" class="btn-small btn-add-item">+ เพิ่มช่องทางใหม่</button>
         
 <div style="display:flex; justify-content:flex-end; margin-top:20px;">
@@ -888,11 +903,12 @@ function openEditOrderModal(order) {
       };
     });
 
-/* Editable products/channels functions (unchanged from previous) */
+/* Editable products/channels functions */
 function renderEditableProducts() {
   const container = document.getElementById('editCategoriesContainer');
   container.innerHTML = '';
   const categoryNames = Object.keys(products);
+
   categoryNames.forEach(cat => {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'edit-category-section';
@@ -900,13 +916,21 @@ function renderEditableProducts() {
       <div class="edit-category-header">
         <div class="category-name-group">
           <input type="text" value="${cat}" data-oldname="${cat}">
-          <button class="btn-delete-cat" data-cat="${cat}">&times;</button>
+          <button class="btn-small btn-delete-cat" data-cat="${cat}">ลบหมวด</button>
         </div>
+      </div>
+      <div class="edit-list-head">
+        <div>ไอคอน</div>
+        <div>ชื่อสินค้า</div>
+        <div>ราคา</div>
+        <div>กำไร</div>
+        <div></div>
       </div>
       <div class="product-list"></div>
       <button class="btn-small btn-add-item" data-cat="${cat}">+ เพิ่มสินค้าใหม่</button>
     `;
     container.appendChild(categoryDiv);
+
     const productListDiv = categoryDiv.querySelector('.product-list');
     for (const sub in products[cat]) {
       const p = products[cat][sub];
@@ -922,9 +946,10 @@ function renderEditableProducts() {
           <input type="number" placeholder="ราคา" value="${p.price}" data-field="price">
           <input type="number" placeholder="กำไร" value="${p.profit}" data-field="profit">
         </div>
-        <button class="btn-small btn-delete-item" data-cat="${cat}" data-sub="${sub}">&times;</button>
+        <button class="btn-small btn-delete-item" data-cat="${cat}" data-sub="${sub}">ลบ</button>
       `;
       productListDiv.appendChild(itemDiv);
+
       const fileInput = itemDiv.querySelector('input[type="file"]');
       fileInput.onchange = (e) => {
         const file = e.target.files[0];
@@ -939,30 +964,47 @@ function renderEditableProducts() {
       };
     }
   });
+
   document.getElementById('addCategoryBtn').onclick = () => {
     const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
-    if (newCatName && !products[newCatName]) { products[newCatName] = {}; renderEditableProducts(); }
-    else if (newCatName) alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
+    if (newCatName && !products[newCatName]) {
+      products[newCatName] = {};
+      renderEditableProducts();
+    } else if (newCatName) {
+      alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
+    }
   };
+
   container.querySelectorAll('.btn-add-item').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat;
       const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
-      if (!newName || products[cat][newName]) { if (newName) alert("ชื่อสินค้านี้มีอยู่แล้ว หรือชื่อไม่ถูกต้อง"); return; }
+      if (!newName || products[cat][newName]) {
+        if (newName) alert("ชื่อสินค้านี้มีอยู่แล้ว หรือชื่อไม่ถูกต้อง");
+        return;
+      }
       products[cat][newName] = { price: 0, icon: "", profit: 0 };
       renderEditableProducts();
     };
   });
+
   container.querySelectorAll('.btn-delete-item').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat; const sub = btn.dataset.sub;
-      if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) { delete products[cat][sub]; renderEditableProducts(); }
+      if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
+        delete products[cat][sub];
+        renderEditableProducts();
+      }
     };
   });
+
   container.querySelectorAll('.btn-delete-cat').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat;
-      if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) { delete products[cat]; renderEditableProducts(); }
+      if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
+        delete products[cat];
+        renderEditableProducts();
+      }
     };
   });
 }
@@ -970,25 +1012,32 @@ function renderEditableProducts() {
 function saveEditedProducts() {
   const container = document.getElementById('editCategoriesContainer');
   const updatedProducts = {}; let hasError = false;
+
   container.querySelectorAll('.edit-category-section').forEach(section => {
     const oldCatName = section.querySelector('.category-name-group input').dataset.oldname;
     const newCatName = section.querySelector('.category-name-group input').value;
     if (!newCatName) { alert('ชื่อหมวดหมู่ต้องไม่ว่าง'); hasError = true; return; }
     if (updatedProducts[newCatName] && newCatName !== oldCatName) { alert(`ชื่อหมวดหมู่ "${newCatName}" มีอยู่แล้ว`); hasError = true; return; }
     updatedProducts[newCatName] = {};
+
     section.querySelectorAll('.product-list-item').forEach(item => {
       const oldName = item.querySelector('[data-field="sub"]').dataset.oldname;
       const newName = item.querySelector('[data-field="sub"]').value;
       const icon = item.querySelector('[data-oldicon]').dataset.newicon || item.querySelector('[data-oldicon]').dataset.oldicon;
       const price = Number(item.querySelector('[data-field="price"]').value);
       const profit = Number(item.querySelector('[data-field="profit"]').value);
+
       if (!newName || isNaN(price) || isNaN(profit)) { alert('กรุณาใส่ข้อมูลให้ครบถ้วนและถูกต้อง'); hasError = true; return; }
       if (updatedProducts[newCatName][newName] && newName !== oldName) { alert(`ชื่อสินค้า "${newName}" มีอยู่แล้วในหมวดหมู่ "${newCatName}"`); hasError = true; return; }
+
       updatedProducts[newCatName][newName] = { price, icon, profit };
     });
   });
   if (hasError) return;
-  products = updatedProducts; saveProductsToLocalStorage(); renderProducts();
+
+  products = updatedProducts;
+  saveProductsToLocalStorage();
+  renderProducts();
   document.getElementById('editProductsModal').style.display = 'none';
   alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
 }
@@ -996,12 +1045,14 @@ function saveEditedProducts() {
 function renderEditableChannels() {
   const container = document.getElementById('editChannelsContainer');
   const channelHeader = `
-    <div style="display: flex; gap: 8px; font-weight: bold; margin-bottom: 10px;">
-      <div style="flex: 2;">ช่องทางการสั่งซื้อ</div>
-      <div style="flex: 1;">ค่าธรรมเนียม (%)</div>
-      <div style="width: 30px;"></div>
-    </div>`;
+    <div class="chan-head">
+      <div>ช่องทางการสั่งซื้อ</div>
+      <div>ค่าธรรมเนียม (%)</div>
+      <div></div>
+    </div>
+  `;
   container.innerHTML = channelHeader;
+
   for (const name in channels) {
     const div = document.createElement('div');
     div.className = 'product-list-item';
@@ -1010,14 +1061,18 @@ function renderEditableChannels() {
         <input type="text" placeholder="ชื่อช่องทาง" value="${name}" data-field="name" data-oldname="${name}">
         <input type="number" placeholder="ค่าธรรมเนียม (%)" value="${channels[name] * 100}" data-field="fee">
       </div>
-      <button class="btn-small btn-delete-item" data-name="${name}">&times;</button>
+      <button class="btn-small btn-delete-item" data-name="${name}">ลบ</button>
     `;
     container.appendChild(div);
   }
+
   document.querySelectorAll('#editChannelsContainer .btn-delete-item').forEach(btn => {
     btn.onclick = () => {
       const name = btn.dataset.name;
-      if (confirm(`คุณต้องการลบช่องทาง "${name}"?`)) { delete channels[name]; renderEditableChannels(); }
+      if (confirm(`คุณต้องการลบช่องทาง "${name}"?`)) {
+        delete channels[name];
+        renderEditableChannels();
+      }
     };
   });
 }
@@ -1025,19 +1080,26 @@ function renderEditableChannels() {
 function saveEditedChannels() {
   const container = document.getElementById('editChannelsContainer');
   const updatedChannels = {}; let hasError = false;
+
   container.querySelectorAll('.product-list-item').forEach(item => {
     const oldName = item.querySelector('[data-field="name"]').dataset.oldname;
     const newName = item.querySelector('[data-field="name"]').value;
     const fee = Number(item.querySelector('[data-field="fee"]').value);
+
     if (!newName || isNaN(fee)) { alert('กรุณาใส่ข้อมูลช่องทางให้ครบถ้วนและถูกต้อง'); hasError = true; return; }
     if (updatedChannels[newName] && newName !== oldName) { alert(`ชื่อช่องทาง "${newName}" มีอยู่แล้ว`); hasError = true; return; }
+
     updatedChannels[newName] = fee / 100;
   });
   if (hasError) return;
-  channels = updatedChannels; saveChannelsToLocalStorage();
+
+  channels = updatedChannels;
+  saveChannelsToLocalStorage();
   document.getElementById('editChannelsModal').style.display = 'none';
+
   if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
-  renderChannels(); renderCart();
+  renderChannels();
+  renderCart();
   alert('บันทึกการแก้ไขช่องทางเรียบร้อยแล้ว');
 }
   </script>
