@@ -145,12 +145,19 @@ margin-bottom: 10px; }
 }
     .history-footer button { margin-left: 0; }
 
-    /* Edit Order Modal */
-    .edit-order-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; }
-    .edit-order-grid .head { font-weight: 700; color: var(--muted); }
-    .edit-order-row input { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 6px; }
+    /* Edit Order Modal (simplified rows) */
+    .edit-item-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid #f3f3f3; }
+    .edit-item-name { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .edit-item-right { display:flex; align-items:center; gap:10px; }
+    .edit-item-qty input { width:90px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+    .edit-item-subtotal { font-size:12px; color:var(--muted); }
     .edit-order-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
     .pill { padding:4px 8px; background:#f5f5f5; border-radius:999px; font-size:12px; color:#444; }
+
+    /* Summarize modal polish */
+    #summarizeModal .modal-content { max-width: 520px; }
+    #summarizeModal .date-input { padding:8px 10px; border:1px solid #ddd; border-radius:6px; }
+    #fetchAndExportBtn { padding:12px 18px; font-weight:700; border-radius:8px; font-size:15px; }
   </style>
 </head>
 <body>
@@ -307,17 +314,13 @@ gap: 8px; font-weight: bold; margin-bottom: 10px;">
         </select>
       </label>
     </div>
-    <div class="edit-order-grid" style="margin-top:8px;">
-      <div class="head">สินค้า</div>
-      <div class="head">ราคา</div>
-      <div class="head">จำนวน</div>
-      <div class="head">ราคารวม</div>
-      <div></div>
-    </div>
+
+    <div style="font-weight:700; color:var(--muted); margin:8px 0 6px 0;">รายการสินค้า</div>
     <div id="editOrderRows"></div>
     <div style="margin-top:8px;">
       <button id="editOrderAddItem" class="btn-small btn-primary">+ เพิ่มสินค้า</button>
     </div>
+
     <div class="total-summary" style="margin-top:16px; max-width:420px; margin-left:auto;">
       <div>ราคารวมสินค้า: <span id="editSubtotal">0</span> ฿</div>
       <div>ค่าธรรมเนียม: <span id="editFee">0</span> ฿</div>
@@ -662,7 +665,7 @@ async function renderHistoryFromGoogleSheet() {
   });
 }
 
-// Edit Order Modal logic
+// Edit Order Modal logic (simplified: name static, qty editable)
 function computeOrderTotals(items, channelName) {
   const subtotal = items.reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || 0), 0);
   const feeRate = channels[channelName] || 0;
@@ -681,9 +684,9 @@ function openEditOrderModal(order) {
   const feeEl = document.getElementById('editFee');
   const finalEl = document.getElementById('editFinalTotal');
 
-  // Fill meta
   idSpan.textContent = order.orderId || '';
   dtSpan.textContent = order.datetime || '';
+
   channelSelect.innerHTML = '';
   Object.keys(channels).forEach(name => {
     const opt = document.createElement('option');
@@ -692,40 +695,77 @@ function openEditOrderModal(order) {
     channelSelect.appendChild(opt);
   });
 
-  // Clone items for editing
   const editItems = (order.items || []).map(it => ({ name: it.name, price: Number(it.price || 0), qty: Number(it.qty || 0) }));
 
-  function renderEditRows(){
-    rowsWrap.innerHTML = '';
-    editItems.forEach((it, idx) => {
-      const row = document.createElement('div');
-      row.className = 'edit-order-grid edit-order-row';
-      row.innerHTML = `
-        <input type="text" value="${it.name || ''}" placeholder="ชื่อสินค้า">
-        <input type="number" min="0" step="0.01" value="${it.price}">
-        <input type="number" min="0" step="1" value="${it.qty}">
-        <div class="small">${(Number(it.price)*Number(it.qty)).toFixed(2)} ฿</div>
-        <button class="btn-small btn-remove" data-idx="${idx}">ลบ</button>
-      `;
-      const [nameI, priceI, qtyI] = row.querySelectorAll('input');
-      nameI.addEventListener('input', () => { it.name = nameI.value; });
-      priceI.addEventListener('input', () => { it.price = Number(priceI.value||0); updateTotals(); renderEditRows(); });
-      qtyI.addEventListener('input', () => { it.qty = Number(qtyI.value||0); updateTotals(); renderEditRows(); });
-      row.querySelector('.btn-remove').addEventListener('click', () => {
-        editItems.splice(idx,1); updateTotals(); renderEditRows();
-      });
-      rowsWrap.appendChild(row);
-    });
-  }
-
-  function updateTotals(){
+  function updateTotals() {
     const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
     subtotalEl.textContent = subtotal.toFixed(2);
     feeEl.textContent = fee.toFixed(2);
     finalEl.textContent = finalTotal.toFixed(2);
   }
 
-  document.getElementById('editOrderAddItem').onclick = () => { editItems.push({ name:'', price:0, qty:1 }); updateTotals(); renderEditRows(); };
+  function makeRow(it, idx) {
+    const row = document.createElement('div');
+    row.className = 'edit-item-row';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'edit-item-name';
+    nameEl.textContent = it.name || '(ไม่มีชื่อสินค้า)';
+
+    const right = document.createElement('div');
+    right.className = 'edit-item-right';
+
+    const qtyWrap = document.createElement('div');
+    qtyWrap.className = 'edit-item-qty';
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.min = '0';
+    qtyInput.step = '1';
+    qtyInput.value = String(it.qty);
+    qtyInput.addEventListener('input', () => {
+      const val = Number(qtyInput.value || 0);
+      editItems[idx].qty = isNaN(val) ? 0 : val;
+      subtotalSpan.textContent = (Number(editItems[idx].price) * Number(editItems[idx].qty)).toFixed(2) + ' ฿';
+      updateTotals();
+    });
+    qtyWrap.appendChild(qtyInput);
+
+    const subtotalSpan = document.createElement('div');
+    subtotalSpan.className = 'edit-item-subtotal';
+    subtotalSpan.textContent = (Number(it.price) * Number(it.qty)).toFixed(2) + ' ฿';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-small btn-remove';
+    removeBtn.textContent = 'ลบ';
+    removeBtn.addEventListener('click', () => {
+      editItems.splice(idx, 1);
+      renderRows();
+      updateTotals();
+    });
+
+    right.appendChild(qtyWrap);
+    right.appendChild(subtotalSpan);
+    right.appendChild(removeBtn);
+
+    row.appendChild(nameEl);
+    row.appendChild(right);
+    return row;
+  }
+
+  function renderRows() {
+    rowsWrap.innerHTML = '';
+    editItems.forEach((it, idx) => rowsWrap.appendChild(makeRow(it, idx)));
+  }
+
+  document.getElementById('editOrderAddItem').onclick = () => {
+    const name = prompt('ชื่อสินค้าใหม่:');
+    if (!name) return;
+    const qty = Number(prompt('จำนวน:', '1') || '1');
+    editItems.push({ name, price: 0, qty: isNaN(qty) ? 1 : qty });
+    renderRows();
+    updateTotals();
+  };
+
   channelSelect.onchange = () => updateTotals();
 
   document.getElementById('editOrderSaveBtn').onclick = async () => {
@@ -738,7 +778,12 @@ function openEditOrderModal(order) {
       subtotal: subtotal.toFixed(2),
       fee: fee.toFixed(2),
       finalTotal: finalTotal.toFixed(2),
-      items: editItems.map(it => ({ name: it.name, price: Number(it.price), qty: Number(it.qty), subtotal: Number(it.price)*Number(it.qty) }))
+      items: editItems.map(it => ({
+        name: it.name,
+        price: Number(it.price),
+        qty: Number(it.qty),
+        subtotal: Number(it.price) * Number(it.qty)
+      }))
     };
     await updateOrderInGoogleSheet(newOrder);
     modal.style.display = 'none';
@@ -752,7 +797,8 @@ function openEditOrderModal(order) {
     await renderHistoryFromGoogleSheet();
   };
 
-  renderEditRows(); updateTotals();
+  renderRows();
+  updateTotals();
   modal.style.display = 'block';
 }
 
