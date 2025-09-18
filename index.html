@@ -145,12 +145,12 @@ margin-bottom: 10px; }
 }
     .history-footer button { margin-left: 0; }
 
-    /* Edit Order Modal (simplified rows) */
-    .edit-item-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid #f3f3f3; }
-    .edit-item-name { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .edit-item-right { display:flex; align-items:center; gap:10px; }
-    .edit-item-qty input { width:90px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
-    .edit-item-subtotal { font-size:12px; color:var(--muted); }
+    /* Edit Order Modal (locked layout) */
+    .edit-item-row{ display:grid; grid-template-columns: 1fr auto; align-items:center; column-gap:10px; }
+    .edit-item-name{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .edit-item-right{ display:grid; grid-template-columns: 90px 96px auto; align-items:center; column-gap:10px; }
+    .edit-item-qty input{ width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+    .edit-item-subtotal{ width:96px; text-align:right; white-space:nowrap; font-variant-numeric: tabular-nums; }
     .edit-order-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
     .pill { padding:4px 8px; background:#f5f5f5; border-radius:999px; font-size:12px; color:#444; }
 
@@ -540,7 +540,7 @@ async function getSalesDataFromGoogleSheet(startDate, endDate) {
   } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return []; }
 }
 
-// NEW: Update and Delete (require Apps Script endpoints)
+// Update and Delete (Apps Script endpoints needed)
 async function updateOrderInGoogleSheet(order) {
   try {
     const response = await fetch(APPS_SCRIPT_URL, {
@@ -665,7 +665,7 @@ async function renderHistoryFromGoogleSheet() {
   });
 }
 
-// Edit Order Modal logic (simplified: name static, qty editable)
+// Edit Order Modal logic (locked layout, qty only)
 function computeOrderTotals(items, channelName) {
   const subtotal = items.reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || 0), 0);
   const feeRate = channels[channelName] || 0;
