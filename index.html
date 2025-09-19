@@ -164,7 +164,7 @@ margin-bottom: 10px; }
     #summarizeModal .date-input { padding:8px 10px; border:1px solid #ddd; border-radius:6px; }
     #fetchAndExportBtn { padding:12px 18px; font-weight:700; border-radius:8px; font-size:15px; }
 
-    /* Edit Products Modal - tightened widths and extra spacing from file button */
+    /* Edit Products Modal - base */
     #editProductsModal .modal-content { max-height: 90vh; display:flex; flex-direction:column; }
     #editProductsScroll { overflow-y:auto; padding-right: 10px; }
     .edit-list-head { display:grid; grid-template-columns: 110px minmax(165px, 1fr) 90px 90px 60px; column-gap:22px; margin:6px 0 8px 0; font-weight:700; color:var(--muted); align-items:center; }
@@ -180,7 +180,7 @@ margin-bottom: 10px; }
     .edit-category-header .category-name-group { display:flex; align-items:center; gap:8px; }
     .edit-category-header .category-name-group input { font-size:16px; font-weight:bold; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
-    /* Edit Channels Modal - compact inputs with spacing (kept as-is) */
+    /* Edit Channels Modal - compact inputs with spacing */
     .chan-head { display:grid; grid-template-columns: minmax(180px, 320px) 120px 60px; column-gap:16px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
     #editChannelsContainer .product-list-item { display:grid; grid-template-columns: minmax(180px, 320px) 120px 60px; column-gap:16px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
     #editChannelsContainer .product-input-group { display: contents; }
@@ -194,28 +194,32 @@ margin-bottom: 10px; }
     .toast-hide{ animation:toast-out .25s ease-in forwards; }
     @keyframes toast-out{ to{ opacity:0; transform:translateY(8px);} }
 
-    /* ===== Overrides requested: Edit Products modal spacing/widths ===== */
+    /* ===== Overrides requested ===== */
+    /* 1) ลดความยาวช่องสินค้า ~ครึ่งหนึ่ง และให้พื้นที่ "ไม่ได้เลือกไฟล์" */
     .edit-list-head,
     .product-list-item{
-      grid-template-columns: 160px minmax(125px, 1fr) 72px 72px 60px;
+      grid-template-columns: 200px minmax(80px, 0.5fr) 72px 72px 60px;
       column-gap: 24px;
     }
-    .product-icon-upload{
-      gap: 14px;
-      margin-right: 24px;
-    }
+    .product-icon-upload{ gap:14px; }
     .product-icon-upload input[type="file"]{
-      width: 130px;
-      max-width: 130px;
+      width: 180px;
+      max-width: 220px;
     }
-    .product-list-item [data-field="sub"]{
-      max-width: 100%;
+    /* 2) ปุ่ม “ดึงข้อมูลและ Export” ให้เด่น */
+    #fetchAndExportBtn{
+      background: linear-gradient(180deg,#22c55e,#16a34a);
+      color:#fff;
+      padding:12px 20px;
+      border:none;
+      border-radius:10px;
+      font-weight:700;
+      font-size:15px;
+      box-shadow:0 8px 20px rgba(22,163,74,.25);
+      transition: filter .15s ease, transform .05s ease;
     }
-    .product-list-item [data-field="price"],
-    .product-list-item [data-field="profit"]{
-      width: 48px;
-      padding: 6px 8px;
-    }
+    #fetchAndExportBtn:hover{ filter:brightness(1.03); }
+    #fetchAndExportBtn:active{ transform: translateY(1px); }
   </style>
 </head>
 <body>
