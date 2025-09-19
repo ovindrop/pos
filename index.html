@@ -167,24 +167,24 @@ margin-bottom: 10px; }
     /* Edit Products Modal - tighter, with spacing from file button */
     #editProductsModal .modal-content { max-height: 90vh; display:flex; flex-direction:column; }
     #editProductsScroll { overflow-y:auto; padding-right: 10px; }
-    .edit-list-head { display:grid; grid-template-columns: 88px minmax(160px,360px) 110px 110px 60px; gap:14px; margin:6px 0 8px 0; font-weight:700; color:var(--muted); align-items:center; }
+    .edit-list-head { display:grid; grid-template-columns: 110px minmax(220px, 1fr) 128px 128px 60px; column-gap:18px; margin:6px 0 8px 0; font-weight:700; color:var(--muted); align-items:center; }
     .edit-category-section .product-list { margin-top:6px; }
-    .product-list-item { display:grid; grid-template-columns: 88px minmax(160px,360px) 110px 110px 60px; gap:14px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
-    .product-icon-upload { display:flex; align-items:center; gap:10px; margin-right:6px; }
+    .product-list-item { display:grid; grid-template-columns: 110px minmax(220px, 1fr) 128px 128px 60px; column-gap:18px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    .product-icon-upload { display:flex; align-items:center; gap:12px; margin-right:14px; }
     .product-icon-upload img { width:40px; height:40px; object-fit:contain; border:1px solid #eee; border-radius:8px; background:#fff; }
-    .product-icon-upload input[type="file"] { width:auto; max-width:120px; }
+    .product-icon-upload input[type="file"] { width:140px; max-width:140px; }
     .edit-category-section .product-input-group { display: contents; }
-    .product-list-item [data-field="sub"] { max-width:340px; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
-    .product-list-item [data-field="price"], .product-list-item [data-field="profit"] { max-width:110px; width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+    .product-list-item [data-field="sub"] { max-width:100%; padding:6px 8px; }
+    .product-list-item [data-field="price"], .product-list-item [data-field="profit"] { width:128px; padding:6px 8px; }
     .edit-category-header { display:flex; justify-content:space-between; align-items:center; gap:10px; }
     .edit-category-header .category-name-group { display:flex; align-items:center; gap:8px; }
     .edit-category-header .category-name-group input { font-size:16px; font-weight:bold; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
-    /* Edit Channels Modal - compact inputs */
-    .chan-head { display:grid; grid-template-columns: minmax(160px,320px) 110px 60px; gap:12px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
-    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: minmax(160px,320px) 110px 60px; gap:12px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    /* Edit Channels Modal - compact inputs with spacing */
+    .chan-head { display:grid; grid-template-columns: minmax(180px, 320px) 120px 60px; column-gap:16px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
+    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: minmax(180px, 320px) 120px 60px; column-gap:16px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
     #editChannelsContainer .product-input-group { display: contents; }
-    #editChannelsContainer input[data-field="name"]{ max-width:320px; width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+    #editChannelsContainer input[data-field="name"]{ max-width:260px; width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
     #editChannelsContainer input[data-field="fee"]{ max-width:110px; width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
     /* Toast */
@@ -245,13 +245,36 @@ margin-bottom: 10px; }
     </aside>
   </main>
 
-  <!-- ...[modals and other content unchanged except edited layouts]... -->
-
-  <!-- Edit Products Modal -->
+  <div id="historyModal" class="modal">
+    <div class="modal-content">
+      <span class="close history-close">&times;</span>
+      <h2>ประวัติการซื้อ (จาก Local)</h2>
+      <div id="historyList"></div>
+      <div class="history-footer">
+        <button id="clearHistoryBtn" class="btn-small">ล้างประวัติการซื้อ</button>
+      </div>
+    </div>
+  </div>
+  
+ 
+<div id="clearConfirmModal" class="modal">
+    <div class="modal-content">
+      <span class="close clear-close">&times;</span>
+      <h2 style="color:#b40000;">⚠️ คำเตือน</h2>
+      <p>การล้างประวัติการสั่งซื้อจะทำให้ข้อมูลสูญหายอย่างถาวร</p>
+      <p><b>กรุณาบันทึกข้อมูลก่อนล้างทุกครั้ง</b></p>
+      <div class="modal-buttons">
+        <button id="saveAndClearBtn" class="btn-save-data">บันทึกข้อมูล</button>
+        <button id="confirmClearBtn" class="btn-confirm-clear">บันทึกแล้ว</button>
+      </div>
+    </div>
+  </div>
+  
   <div id="editProductsModal" class="modal">
     <div class="modal-content">
       <span class="close edit-close">&times;</span>
-      <h2>แก้ไขรายการสินค้า</h2>
+    
+<h2>แก้ไขรายการสินค้า</h2>
       <div id="editProductsScroll">
         <div id="editCategoriesContainer"></div>
         <button id="addCategoryBtn" class="btn-small btn-add-item">+ เพิ่มหมวดหมู่ใหม่</button>
@@ -263,20 +286,81 @@ justify-content:flex-end; margin-top:20px;">
     </div>
   </div>
 
-  <!-- Edit Channels Modal -->
   <div id="editChannelsModal" class="modal">
     <div class="modal-content">
         <span class="close channels-close">&times;</span>
         <h2>แก้ไขช่องทางการสั่งซื้อ</h2>
         <div id="editChannelsContainer"></div>
         <button id="addChannelBtn" class="btn-small btn-add-item">+ เพิ่มช่องทางใหม่</button>
-        <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+        
+<div style="display:flex; justify-content:flex-end; margin-top:20px;">
             <button id="saveChannelsBtn" class="btn-save-edit">บันทึกการแก้ไข</button>
         </div>
     </div>
   </div>
 
-  <!-- Toast root -->
+<div id="summarizeModal" class="modal">
+    <div class="modal-content">
+        <span class="close summarize-close">&times;</span>
+        <h2>สรุปยอดจาก Google Sheet</h2>
+        <p>เลือกช่วงเวลาที่ต้องการสรุปยอด:</p>
+        <div style="display: flex; justify-content: space-around; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <span style="font-weight: bold; font-size: 1.1em;">จาก</span>
+            <input type="date" id="startDate" class="date-input">
+            <span style="font-weight: bold; font-size: 1.1em;">ถึง</span>
+            <input type="date" id="endDate" class="date-input">
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button id="fetchAndExportBtn" class="btn-save-data">ดึงข้อมูลและ Export</button>
+        </div>
+    </div>
+</div>
+
+<div id="historyFromSheetModal" class="modal">
+    <div class="modal-content">
+        <span class="close history-sheet-close">&times;</span>
+        <h2>ประวัติการสั่งซื้อล่าสุด</h2>
+        <div id="historyLoader">กำลังดึงข้อมูล...</div>
+        <div id="historyFromSheetContent" style="display: none;"></div>
+        <div class="history-footer">
+            <button id="historySheetClearBtn" class="btn-small btn-danger">ล้างประวัติการซื้อ</button>
+            <span class="small muted">การลบทั้งชุดทำใน Google Sheet</span>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Order Modal -->
+<div id="editOrderModal" class="modal">
+  <div class="modal-content">
+    <span class="close edit-order-close">&times;</span>
+    <h2>แก้ไขรายการออเดอร์</h2>
+    <div id="editOrderMeta" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0;">
+      <span class="pill">เลขที่: <span id="editOrderId"></span></span>
+      <span class="pill">วันที่: <span id="editOrderDatetime"></span></span>
+      <label>ช่องทาง:
+        <select id="editOrderChannel" class="btn-small" style="padding:6px 8px;">
+        </select>
+      </label>
+    </div>
+
+    <div style="font-weight:700; color:var(--muted); margin:8px 0 6px 0;">รายการสินค้า</div>
+    <div id="editOrderRows"></div>
+    <div style="margin-top:8px;">
+      <button id="editOrderAddItem" class="btn-small btn-primary">+ เพิ่มสินค้า</button>
+    </div>
+
+    <div class="total-summary" style="margin-top:16px; max-width:420px; margin-left:auto;">
+      <div>ราคารวมสินค้า: <span id="editSubtotal">0</span> ฿</div>
+      <div>ค่าธรรมเนียม: <span id="editFee">0</span> ฿</div>
+      <div class="final-total">ยอดที่ได้รับ: <span id="editFinalTotal">0</span> ฿</div>
+    </div>
+    <div class="edit-order-actions">
+      <button id="editOrderDeleteBtn" class="btn-small btn-danger">ลบออเดอร์</button>
+      <button id="editOrderSaveBtn" class="btn-small btn-primary">บันทึก</button>
+    </div>
+  </div>
+</div>
+
   <div id="toastRoot" class="toast-container" style="display:none;"></div>
 
   <script>
@@ -291,433 +375,520 @@ justify-content:flex-end; margin-top:20px;">
     let channels = JSON.parse(localStorage.getItem('channels')) || defaultChannels;
     let activeChannel = 'หน้าร้าน';
     let cart = {};
-    let confirmButtonRef = null;
-    let confirmResetTimer = null;
 
-    function setConfirmOrdered() {
-      if (!confirmButtonRef) return;
-      if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
-      confirmButtonRef.textContent = 'สั่งซื้อแล้ว';
-      confirmButtonRef.classList.add('confirm-ordered');
-      confirmButtonRef.disabled = true;
-      confirmResetTimer = setTimeout(resetConfirmButton, 3000);
+let confirmButtonRef = null;
+let confirmResetTimer = null;
+
+function setConfirmOrdered() {
+  if (!confirmButtonRef) return;
+  if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
+  confirmButtonRef.textContent = 'สั่งซื้อแล้ว';
+  confirmButtonRef.classList.add('confirm-ordered');
+  confirmButtonRef.disabled = true;
+  confirmResetTimer = setTimeout(resetConfirmButton, 3000);
+}
+function resetConfirmButton() {
+  if (!confirmButtonRef) return;
+  if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
+  confirmButtonRef.textContent = '✅ ยืนยันการสั่งซื้อ';
+  confirmButtonRef.classList.remove('confirm-ordered');
+  confirmButtonRef.disabled = false;
+}
+
+function makeId(cat, sub){ return encodeURIComponent(cat + '||' + sub); }
+function saveProductsToLocalStorage() { localStorage.setItem('products', JSON.stringify(products)); }
+function saveChannelsToLocalStorage() { localStorage.setItem('channels', JSON.stringify(channels)); }
+
+function renderProducts(){
+  const productCategories = document.getElementById('productCategories');
+  productCategories.innerHTML = '';
+  for(const cat in products){
+    const categoryDiv = document.createElement('div');
+    categoryDiv.className = 'category';
+    categoryDiv.innerHTML = `
+      <h2>${cat}</h2>
+      <div class="grid" data-cat="${cat}"></div>
+    `;
+    productCategories.appendChild(categoryDiv);
+    const grid = categoryDiv.querySelector('.grid');
+    for(const sub in products[cat]){
+      const p = products[cat][sub];
+      const id = makeId(cat, sub);
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.setAttribute('role','button');
+      div.dataset.id = id;
+      div.dataset.name = `${cat} ${sub}`;
+      div.dataset.price = p.price;
+      div.innerHTML = `
+        <img src="${p.icon}" alt="${sub}">
+        <div class="label">${sub}</div>
+        <div class="price">${p.price} ฿</div>
+      `;
+      div.addEventListener('click', () => addToCart(id, div.dataset.name, Number(div.dataset.price), p.profit));
+      grid.appendChild(div);
     }
-    function resetConfirmButton() {
-      if (!confirmButtonRef) return;
-      if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
-      confirmButtonRef.textContent = '✅ ยืนยันการสั่งซื้อ';
-      confirmButtonRef.classList.remove('confirm-ordered');
-      confirmButtonRef.disabled = false;
-    }
+  }
+}
 
-    function makeId(cat, sub){ return encodeURIComponent(cat + '||' + sub); }
-    function saveProductsToLocalStorage() { localStorage.setItem('products', JSON.stringify(products)); }
-    function saveChannelsToLocalStorage() { localStorage.setItem('channels', JSON.stringify(channels)); }
+function addToCart(id, name, price, profit = 0){
+  if(!cart[id]){ cart[id] = { id, name, price: Number(price), qty: 0, profit: (profit==null?0:profit) }; }
+  cart[id].qty += 1;
+  resetConfirmButton();
+  renderCart();
+}
+function changeQty(id, delta){ if(!cart[id]) return; cart[id].qty += delta; if(cart[id].qty <= 0) delete cart[id]; renderCart(); }
+function removeItem(id){ if(cart[id]) delete cart[id]; renderCart(); }
 
-    function renderProducts(){
-      const productCategories = document.getElementById('productCategories');
-      productCategories.innerHTML = '';
-      for(const cat in products){
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'category';
-        categoryDiv.innerHTML = `
-          <h2>${cat}</h2>
-          <div class="grid" data-cat="${cat}"></div>
-        `;
-        productCategories.appendChild(categoryDiv);
-        const grid = categoryDiv.querySelector('.grid');
-        for(const sub in products[cat]){
-          const p = products[cat][sub];
-          const id = makeId(cat, sub);
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.setAttribute('role','button');
-          div.dataset.id = id;
-          div.dataset.name = `${cat} ${sub}`;
-          div.dataset.price = p.price;
-          div.innerHTML = `
-            <img src="${p.icon}" alt="${sub}">
-            <div class="label">${sub}</div>
-            <div class="price">${p.price} ฿</div>
-          `;
-          div.addEventListener('click', () => addToCart(id, div.dataset.name, Number(div.dataset.price), p.profit));
-          grid.appendChild(div);
-        }
-      }
-    }
-
-    function addToCart(id, name, price, profit = 0){
-      if(!cart[id]){ cart[id] = { id, name, price: Number(price), qty: 0, profit: (profit==null?0:profit) }; }
-      cart[id].qty += 1;
-      resetConfirmButton();
+function renderChannels() {
+  const channelButtons = document.getElementById('channelButtons');
+  channelButtons.innerHTML = '';
+  for (const channelName in channels) {
+    const button = document.createElement('button');
+    button.className = 'channel-button';
+    button.textContent = channelName;
+    button.dataset.channel = channelName;
+    if (channelName === activeChannel) button.classList.add('active');
+    button.onclick = () => {
+      activeChannel = channelName;
+      document.querySelectorAll('.channel-button').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
       renderCart();
-    }
-    function changeQty(id, delta){ if(!cart[id]) return; cart[id].qty += delta; if(cart[id].qty <= 0) delete cart[id]; renderCart(); }
-    function removeItem(id){ if(cart[id]) delete cart[id]; renderCart(); }
+    };
+    channelButtons.appendChild(button);
+  }
+}
 
-    function renderChannels() {
-      const channelButtons = document.getElementById('channelButtons');
-      channelButtons.innerHTML = '';
-      for (const channelName in channels) {
-        const button = document.createElement('button');
-        button.className = 'channel-button';
-        button.textContent = channelName;
-        button.dataset.channel = channelName;
-        if (channelName === activeChannel) button.classList.add('active');
-        button.onclick = () => {
-          activeChannel = channelName;
-          document.querySelectorAll('.channel-button').forEach(btn => btn.classList.remove('active'));
-          button.classList.add('active');
-          renderCart();
-        };
-        channelButtons.appendChild(button);
-      }
-    }
+function renderCart() {
+  const tbody = document.querySelector("#cartTable tbody");
+  tbody.innerHTML = "";
+  let subtotal = 0;
+  for (const id in cart) {
+    const item = cart[id];
+    const itemSubtotal = item.price * item.qty; subtotal += itemSubtotal;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${item.name}</td>
+      <td>${item.price}</td>
+      <td>${item.qty}</td>
+      <td>${itemSubtotal.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+    const actionTr = document.createElement("tr");
+    actionTr.className = 'action-row';
+    actionTr.innerHTML = `
+      <td></td>
+      <td></td>
+      <td>
+        <div class="qty-controls">
+            <button class="btn-small btn-plus" data-id="${id}">+</button>
+            <button class="btn-small btn-minus" data-id="${id}">-</button>
+        </div>
+      </td>
+      <td><button class="btn-small btn-remove" data-id="${id}">ลบ</button></td>
+    `;
+    tbody.appendChild(actionTr);
+  }
+  let fee = 0; let finalTotal = subtotal;
+  const feeRate = channels[activeChannel] || 0;
+  if (feeRate > 0) {
+    fee = subtotal * feeRate; finalTotal = subtotal - fee;
+    document.getElementById('feeRow').style.display = 'flex';
+    document.getElementById('feeRow').innerHTML = `ค่าธรรมเนียม (${activeChannel} ${feeRate*100}%): <span id="feeDisplay">${fee.toFixed(2)}</span> ฿`;
+  } else {
+    document.getElementById('feeRow').style.display = 'none';
+  }
+  document.getElementById('subtotalDisplay').innerText = subtotal.toFixed(2);
+  document.getElementById('finalTotalDisplay').innerText = finalTotal.toFixed(2);
+  tbody.querySelectorAll('.btn-plus').forEach(btn => btn.addEventListener('click', () => changeQty(btn.dataset.id, 1)));
+  tbody.querySelectorAll('.btn-minus').forEach(btn => btn.addEventListener('click', () => changeQty(btn.dataset.id, -1)));
+  tbody.querySelectorAll('.btn-remove').forEach(btn => btn.addEventListener('click', () => { if (confirm('ยืนยันการลบรายการนี้?')) removeItem(btn.dataset.id); }));
+}
 
-    function renderCart() {
-      const tbody = document.querySelector("#cartTable tbody");
-      tbody.innerHTML = "";
-      let subtotal = 0;
-      for (const id in cart) {
-        const item = cart[id];
-        const itemSubtotal = item.price * item.qty; subtotal += itemSubtotal;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.name}</td>
-          <td>${item.price}</td>
-          <td>${item.qty}</td>
-          <td>${itemSubtotal.toFixed(2)}</td>
-        `;
-        tbody.appendChild(tr);
-        const actionTr = document.createElement("tr");
-        actionTr.className = 'action-row';
-        actionTr.innerHTML = `
-          <td></td>
-          <td></td>
-          <td>
-            <div class="qty-controls">
-                <button class="btn-small btn-plus" data-id="${id}">+</button>
-                <button class="btn-small btn-minus" data-id="${id}">-</button>
-            </div>
-          </td>
-          <td><button class="btn-small btn-remove" data-id="${id}">ลบ</button></td>
-        `;
-        tbody.appendChild(actionTr);
-      }
-      let fee = 0; let finalTotal = subtotal;
-      const feeRate = channels[activeChannel] || 0;
-      if (feeRate > 0) {
-        fee = subtotal * feeRate; finalTotal = subtotal - fee;
-        document.getElementById('feeRow').style.display = 'flex';
-        document.getElementById('feeRow').innerHTML = `ค่าธรรมเนียม (${activeChannel} ${feeRate*100}%): <span id="feeDisplay">${fee.toFixed(2)}</span> ฿`;
-      } else {
-        document.getElementById('feeRow').style.display = 'none';
-      }
-      document.getElementById('subtotalDisplay').innerText = subtotal.toFixed(2);
-      document.getElementById('finalTotalDisplay').innerText = finalTotal.toFixed(2);
-      tbody.querySelectorAll('.btn-plus').forEach(btn => btn.addEventListener('click', () => changeQty(btn.dataset.id, 1)));
-      tbody.querySelectorAll('.btn-minus').forEach(btn => btn.addEventListener('click', () => changeQty(btn.dataset.id, -1)));
-      tbody.querySelectorAll('.btn-remove').forEach(btn => btn.addEventListener('click', () => { if (confirm('ยืนยันการลบรายการนี้?')) removeItem(btn.dataset.id); }));
-    }
-
-    function groupSalesRows(rows) {
-      const grouped = {};
-      let currentOrderId = null;
-      (rows || []).forEach((r) => {
-        const explicitOrderId = r["Order ID"];
-        const orderId = explicitOrderId || currentOrderId;
-        if (!orderId) return;
-        currentOrderId = orderId;
-        if (!grouped[orderId]) {
-          grouped[orderId] = { orderId, datetime: r["Datetime"] || "", channel: r["Channel"] || "", fee: r["Fee"] ?? 0, finalTotal: r["Final Total"] ?? 0, items: [] };
-        }
-        const itemName = r["Item Name"];
-        if (itemName) grouped[orderId].items.push({ name: itemName, price: Number(r["Price"] ?? 0), qty: Number(r["Quantity"] ?? 0), subtotal: Number(r["Total"] ?? 0) });
-      });
-      return grouped;
-    }
-
-    function showToast(message){
-      const root = document.getElementById('toastRoot');
-      if (!root) return;
-      root.style.display = 'flex';
-      const t = document.createElement('div');
-      t.className = 'toast';
-      t.textContent = message;
-      root.appendChild(t);
-      setTimeout(()=>{ t.classList.add('toast-hide'); }, 5000);
-      t.addEventListener('animationend', (e)=>{
-        if (e.animationName === 'toast-out') {
-          t.remove();
-          if (!root.children.length) root.style.display = 'none';
-        }
-      });
-    }
-
-    async function saveOrderToGoogleSheet(order) {
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify({ action: 'saveOrder', orderData: order }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
-        const result = await response.json();
-        return result.status === 'success';
-      } catch { return false; }
-    }
-
-    async function getSalesDataFromGoogleSheet(startDate, endDate) {
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify({ action: 'getSalesData', startDate, endDate }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
-        const result = await response.json();
-        return result.status === 'success' ? result.data : [];
-      } catch { return []; }
-    }
-
-    function exportDataToXLSX(data) {
-      if (!data || data.length === 0) { alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก'); return; }
-      const rows = [["Order ID","Datetime (Asia/Bangkok)","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
-      const groupedData = groupSalesRows(data);
-      const orderIds = Object.keys(groupedData).sort();
-      orderIds.forEach(orderId => {
-        const order = groupedData[orderId];
-        const items = order.items || [];
-        if (items.length === 0) {
-          rows.push([order.orderId || "", order.datetime || "", order.channel || "", "", "", "", "", order.fee ?? "", order.finalTotal ?? ""]);
-          return;
-        }
-        rows.push([order.orderId || "", order.datetime || "", order.channel || "", items[0].name, items[0].price, items[0].qty, items[0].subtotal, order.fee ?? "", order.finalTotal ?? ""]);
-        for (let i = 1; i < items.length; i++) {
-          const it = items[i]; rows.push(["", "", "", it.name, it.price, it.qty, it.subtotal, "", ""]);
-        }
-      });
-      const ws = XLSX.utils.aoa_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "สรุปยอดการขาย");
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      const filename = `สรุปยอด_${startDate}_ถึง_${endDate}.xlsx`;
-      XLSX.writeFile(wb, filename);
-    }
-
-    async function handleFetchAndExport() {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      if (!startDate || !endDate) { alert('กรุณาเลือกช่วงเวลาให้ครบถ้วน'); return; }
-      const btn = document.getElementById('fetchAndExportBtn');
-      btn.textContent = "กำลังดึงข้อมูล..."; btn.disabled = true;
-      const salesData = await getSalesDataFromGoogleSheet(startDate, endDate);
-      btn.textContent = "ดึงข้อมูลและ Export"; btn.disabled = false;
-      exportDataToXLSX(salesData);
-      document.getElementById('summarizeModal').style.display = 'none';
-    }
-
-    async function renderHistoryFromGoogleSheet() {
-      const historyModal = document.getElementById('historyFromSheetModal');
-      const historyContent = document.getElementById('historyFromSheetContent');
-      const historyLoader = document.getElementById('historyLoader');
-
-      historyModal.style.display = 'block';
-      historyContent.style.display = 'none';
-      historyLoader.style.display = 'flex';
-
-      const salesData = await getSalesDataFromGoogleSheet("1900-01-01", "2999-12-31");
-      historyLoader.style.display = 'none';
-      historyContent.style.display = 'block';
-
-      if (!salesData || salesData.length === 0) {
-        historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>'; return;
-      }
-
-      const groupedData = groupSalesRows(salesData);
-      historyContent.innerHTML = '';
-      const orderIds = Object.keys(groupedData).sort().reverse();
-
-      orderIds.forEach(orderId => {
-        const order = groupedData[orderId];
-        const orderDiv = document.createElement('div');
-        orderDiv.className = 'history-detail';
-        orderDiv.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <div>
-              <h4 style="margin:0 0 6px 0;">รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
-              <p style="margin:0;">วันที่: ${order.datetime || "ไม่ระบุ"}</p>
-              <p style="margin:0;">ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn-small btn-primary edit-order-btn" data-order="${order.orderId}">แก้ไขรายการ</button>
-              <button class="btn-small btn-danger delete-order-btn" data-order="${order.orderId}">ลบออเดอร์</button>
-            </div>
-          </div>
-          <div class="history-detail-items" style="margin-top:8px;">
-            <ul>
-              ${(order.items || []).map(item => `
-                <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
-              `).join('')}
-            </ul>
-          </div>
-          <p><strong>ยอดที่ได้รับ: ${order.finalTotal || "0"} ฿</strong></p>
-        `;
-        historyContent.appendChild(orderDiv);
-
-        orderDiv.querySelector('.edit-order-btn').addEventListener('click', () => openEditOrderModal(order));
-        orderDiv.querySelector('.delete-order-btn').addEventListener('click', async () => {
-          if (!confirm(`ลบออเดอร์ ${order.orderId}?`)) return;
-          await deleteOrderInGoogleSheet(order.orderId);
-          await renderHistoryFromGoogleSheet();
-        });
-      });
-    }
-
-    function computeOrderTotals(items, channelName) {
-      const subtotal = items.reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || 0), 0);
-      const feeRate = channels[channelName] || 0;
-      const fee = subtotal * feeRate;
-      const finalTotal = subtotal - fee;
-      return { subtotal, fee, finalTotal };
-    }
-
-    function openEditOrderModal(order) {
-      const modal = document.getElementById('editOrderModal');
-      const rowsWrap = document.getElementById('editOrderRows');
-      const idSpan = document.getElementById('editOrderId');
-      const dtSpan = document.getElementById('editOrderDatetime');
-      const channelSelect = document.getElementById('editOrderChannel');
-      const subtotalEl = document.getElementById('editSubtotal');
-      const feeEl = document.getElementById('editFee');
-      const finalEl = document.getElementById('editFinalTotal');
-
-      idSpan.textContent = order.orderId || '';
-      dtSpan.textContent = order.datetime || '';
-
-      channelSelect.innerHTML = '';
-      Object.keys(channels).forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name; opt.textContent = name;
-        if (name === (order.channel || '')) opt.selected = true;
-        channelSelect.appendChild(opt);
-      });
-
-      const editItems = (order.items || []).map(it => ({ name: it.name, price: Number(it.price || 0), qty: Number(it.qty || 0) }));
-
-      function updateTotals() {
-        const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
-        subtotalEl.textContent = subtotal.toFixed(2);
-        feeEl.textContent = fee.toFixed(2);
-        finalEl.textContent = finalTotal.toFixed(2);
-      }
-
-      function makeRow(it, idx) {
-        const row = document.createElement('div');
-        row.className = 'edit-item-row';
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'edit-item-name';
-        nameEl.textContent = it.name || '(ไม่มีชื่อสินค้า)';
-
-        const right = document.createElement('div');
-        right.className = 'edit-item-right';
-
-        const qtyWrap = document.createElement('div');
-        qtyWrap.className = 'edit-item-qty';
-        const qtyInput = document.createElement('input');
-        qtyInput.type = 'number';
-        qtyInput.min = '0';
-        qtyInput.step = '1';
-        qtyInput.value = String(it.qty);
-        qtyInput.addEventListener('input', () => {
-          const val = Number(qtyInput.value || 0);
-          editItems[idx].qty = isNaN(val) ? 0 : val;
-          subtotalSpan.textContent = (Number(editItems[idx].price) * Number(editItems[idx].qty)).toFixed(2) + ' ฿';
-          updateTotals();
-        });
-        qtyWrap.appendChild(qtyInput);
-
-        const subtotalSpan = document.createElement('div');
-        subtotalSpan.className = 'edit-item-subtotal';
-        subtotalSpan.textContent = (Number(it.price) * Number(it.qty)).toFixed(2) + ' ฿';
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn-small btn-remove';
-        removeBtn.textContent = 'ลบ';
-        removeBtn.addEventListener('click', () => {
-          editItems.splice(idx, 1);
-          renderRows();
-          updateTotals();
-        });
-
-        right.appendChild(qtyWrap);
-        right.appendChild(subtotalSpan);
-        right.appendChild(removeBtn);
-
-        row.appendChild(nameEl);
-        row.appendChild(right);
-        return row;
-      }
-
-      function renderRows() {
-        rowsWrap.innerHTML = '';
-        editItems.forEach((it, idx) => rowsWrap.appendChild(makeRow(it, idx)));
-      }
-
-      document.getElementById('editOrderAddItem').onclick = () => {
-        const name = prompt('ชื่อสินค้าใหม่:');
-        if (!name) return;
-        const qty = Number(prompt('จำนวน:', '1') || '1');
-        editItems.push({ name, price: 0, qty: isNaN(qty) ? 1 : qty });
-        renderRows();
-        updateTotals();
+// Group rows into orders
+function groupSalesRows(rows) {
+  const grouped = {};
+  let currentOrderId = null;
+  (rows || []).forEach((r) => {
+    const explicitOrderId = r["Order ID"];
+    const orderId = explicitOrderId || currentOrderId;
+    if (!orderId) return;
+    currentOrderId = orderId;
+    if (!grouped[orderId]) {
+      grouped[orderId] = {
+        orderId: orderId,
+        datetime: r["Datetime"] || "",
+        channel: r["Channel"] || "",
+        fee: r["Fee"] ?? 0,
+        finalTotal: r["Final Total"] ?? 0,
+        items: []
       };
+    } else {
+      if (!grouped[orderId].datetime && r["Datetime"]) grouped[orderId].datetime = r["Datetime"];
+      if (!grouped[orderId].channel && r["Channel"]) grouped[orderId].channel = r["Channel"];
+      if ((grouped[orderId].fee === 0 || grouped[orderId].fee === "") && (r["Fee"] ?? "") !== "") grouped[orderId].fee = r["Fee"];
+      if ((grouped[orderId].finalTotal === 0 || grouped[orderId].finalTotal === "") && (r["Final Total"] ?? "") !== "") grouped[orderId].finalTotal = r["Final Total"];
+    }
+    const itemName = r["Item Name"];
+    if (itemName) {
+      grouped[orderId].items.push({
+        name: itemName,
+        price: Number(r["Price"] ?? 0),
+        qty: Number(r["Quantity"] ?? 0),
+        subtotal: Number(r["Total"] ?? 0)
+      });
+    }
+  });
+  return grouped;
+}
 
-      channelSelect.onchange = () => updateTotals();
+// Toast
+function showToast(message){
+  const root = document.getElementById('toastRoot');
+  if (!root) return;
+  root.style.display = 'flex';
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = message;
+  root.appendChild(t);
+  setTimeout(()=>{ t.classList.add('toast-hide'); }, 5000);
+  t.addEventListener('animationend', (e)=>{
+    if (e.animationName === 'toast-out') {
+      t.remove();
+      if (!root.children.length) root.style.display = 'none';
+    }
+  });
+}
 
-      document.getElementById('editOrderSaveBtn').onclick = async () => {
-        if (!editItems.length) { alert('ต้องมีรายการอย่างน้อย 1 รายการ'); return; }
-        const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
-        const newOrder = {
-          orderId: order.orderId,
-          datetime: order.datetime,
-          channel: channelSelect.value,
-          subtotal: subtotal.toFixed(2),
-          fee: fee.toFixed(2),
-          finalTotal: finalTotal.toFixed(2),
-          items: editItems.map(it => ({ name: it.name, price: Number(it.price), qty: Number(it.qty), subtotal: Number(it.price) * Number(it.qty) }))
-        };
-        await updateOrderInGoogleSheet(newOrder);
-        modal.style.display = 'none';
-        await renderHistoryFromGoogleSheet();
-      };
+// Apps Script calls
+async function saveOrderToGoogleSheet(order) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveOrder', orderData: order }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status === 'success') return true;
+    alert('บันทึกคำสั่งซื้อไม่สำเร็จ: ' + result.message);
+    return false;
+  } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return false; }
+}
+async function getSalesDataFromGoogleSheet(startDate, endDate) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getSalesData', startDate, endDate }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status === 'success') return result.data;
+    alert('ดึงข้อมูลไม่สำเร็จ: ' + result.message); return [];
+  } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return []; }
+}
 
-      document.getElementById('editOrderDeleteBtn').onclick = async () => {
-        if (!confirm(`ลบออเดอร์ ${order.orderId}?`)) return;
-        await deleteOrderInGoogleSheet(order.orderId);
-        modal.style.display = 'none';
-        await renderHistoryFromGoogleSheet();
-      };
+// Update and Delete
+async function updateOrderInGoogleSheet(order) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateOrder', orderData: order }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error(result.message || 'อัปเดตไม่สำเร็จ');
+    showToast('บันทึกออเดอร์แล้ว');
+  } catch (e) { alert('อัปเดตไม่สำเร็จ: ' + e.message); }
+}
 
+async function deleteOrderInGoogleSheet(orderId) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteOrder', orderId }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error(result.message || 'ลบไม่สำเร็จ');
+    showToast('ลบออเดอร์แล้ว');
+  } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
+}
+
+function exportDataToXLSX(data) {
+  if (!data || data.length === 0) { alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก'); return; }
+  const rows = [["Order ID","Datetime (Asia/Bangkok)","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
+  const groupedData = groupSalesRows(data);
+  const orderIds = Object.keys(groupedData).sort();
+  orderIds.forEach(orderId => {
+    const order = groupedData[orderId];
+    const items = order.items || [];
+    if (items.length === 0) {
+      rows.push([order.orderId || "", order.datetime || "", order.channel || "", "", "", "", "", order.fee ?? "", order.finalTotal ?? ""]);
+      return;
+    }
+    rows.push([order.orderId || "", order.datetime || "", order.channel || "", items[0].name, items[0].price, items[0].qty, items[0].subtotal, order.fee ?? "", order.finalTotal ?? ""]);
+    for (let i = 1; i < items.length; i++) {
+      const it = items[i]; rows.push(["", "", "", it.name, it.price, it.qty, it.subtotal, "", ""]);
+    }
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "สรุปยอดการขาย");
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  const filename = `สรุปยอด_${startDate}_ถึง_${endDate}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
+async function handleFetchAndExport() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  if (!startDate || !endDate) { alert('กรุณาเลือกช่วงเวลาให้ครบถ้วน'); return; }
+  const btn = document.getElementById('fetchAndExportBtn');
+  btn.textContent = "กำลังดึงข้อมูล..."; btn.disabled = true;
+  const salesData = await getSalesDataFromGoogleSheet(startDate, endDate);
+  btn.textContent = "ดึงข้อมูลและ Export"; btn.disabled = false;
+  exportDataToXLSX(salesData);
+  document.getElementById('summarizeModal').style.display = 'none';
+}
+
+// HISTORY
+async function renderHistoryFromGoogleSheet() {
+  const historyModal = document.getElementById('historyFromSheetModal');
+  const historyContent = document.getElementById('historyFromSheetContent');
+  const historyLoader = document.getElementById('historyLoader');
+
+  historyModal.style.display = 'block';
+  historyContent.style.display = 'none';
+  historyLoader.style.display = 'flex';
+
+  const salesData = await getSalesDataFromGoogleSheet("1900-01-01", "2999-12-31");
+  historyLoader.style.display = 'none';
+  historyContent.style.display = 'block';
+
+  if (!salesData || salesData.length === 0) {
+    historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>'; return;
+  }
+
+  const groupedData = groupSalesRows(salesData);
+  historyContent.innerHTML = '';
+  const orderIds = Object.keys(groupedData).sort().reverse();
+
+  orderIds.forEach(orderId => {
+    const order = groupedData[orderId];
+    const orderDiv = document.createElement('div');
+    orderDiv.className = 'history-detail';
+    orderDiv.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <div>
+          <h4 style="margin:0 0 6px 0;">รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
+          <p style="margin:0;">วันที่: ${order.datetime || "ไม่ระบุ"}</p>
+          <p style="margin:0;">ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-small btn-primary edit-order-btn" data-order="${order.orderId}">แก้ไขรายการ</button>
+          <button class="btn-small btn-danger delete-order-btn" data-order="${order.orderId}">ลบออเดอร์</button>
+        </div>
+      </div>
+      <div class="history-detail-items" style="margin-top:8px;">
+        <ul>
+          ${(order.items || []).map(item => `
+            <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
+          `).join('')}
+        </ul>
+      </div>
+      <p><strong>ยอดที่ได้รับ: ${order.finalTotal || "0"} ฿</strong></p>
+    `;
+    historyContent.appendChild(orderDiv);
+
+    orderDiv.querySelector('.edit-order-btn').addEventListener('click', () => openEditOrderModal(order));
+    orderDiv.querySelector('.delete-order-btn').addEventListener('click', async () => {
+      if (!confirm(`ลบออเดอร์ ${order.orderId}?`)) return;
+      await deleteOrderInGoogleSheet(order.orderId);
+      await renderHistoryFromGoogleSheet();
+    });
+  });
+}
+
+// Edit Order Modal logic
+function computeOrderTotals(items, channelName) {
+  const subtotal = items.reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || 0), 0);
+  const feeRate = channels[channelName] || 0;
+  const fee = subtotal * feeRate;
+  const finalTotal = subtotal - fee;
+  return { subtotal, fee, finalTotal };
+}
+
+function openEditOrderModal(order) {
+  const modal = document.getElementById('editOrderModal');
+  const rowsWrap = document.getElementById('editOrderRows');
+  const idSpan = document.getElementById('editOrderId');
+  const dtSpan = document.getElementById('editOrderDatetime');
+  const channelSelect = document.getElementById('editOrderChannel');
+  const subtotalEl = document.getElementById('editSubtotal');
+  const feeEl = document.getElementById('editFee');
+  const finalEl = document.getElementById('editFinalTotal');
+
+  idSpan.textContent = order.orderId || '';
+  dtSpan.textContent = order.datetime || '';
+
+  channelSelect.innerHTML = '';
+  Object.keys(channels).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    if (name === (order.channel || '')) opt.selected = true;
+    channelSelect.appendChild(opt);
+  });
+
+  const editItems = (order.items || []).map(it => ({ name: it.name, price: Number(it.price || 0), qty: Number(it.qty || 0) }));
+
+  function updateTotals() {
+    const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
+    subtotalEl.textContent = subtotal.toFixed(2);
+    feeEl.textContent = fee.toFixed(2);
+    finalEl.textContent = finalTotal.toFixed(2);
+  }
+
+  function makeRow(it, idx) {
+    const row = document.createElement('div');
+    row.className = 'edit-item-row';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'edit-item-name';
+    nameEl.textContent = it.name || '(ไม่มีชื่อสินค้า)';
+
+    const right = document.createElement('div');
+    right.className = 'edit-item-right';
+
+    const qtyWrap = document.createElement('div');
+    qtyWrap.className = 'edit-item-qty';
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.min = '0';
+    qtyInput.step = '1';
+    qtyInput.value = String(it.qty);
+    qtyInput.addEventListener('input', () => {
+      const val = Number(qtyInput.value || 0);
+      editItems[idx].qty = isNaN(val) ? 0 : val;
+      subtotalSpan.textContent = (Number(editItems[idx].price) * Number(editItems[idx].qty)).toFixed(2) + ' ฿';
+      updateTotals();
+    });
+    qtyWrap.appendChild(qtyInput);
+
+    const subtotalSpan = document.createElement('div');
+    subtotalSpan.className = 'edit-item-subtotal';
+    subtotalSpan.textContent = (Number(it.price) * Number(it.qty)).toFixed(2) + ' ฿';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-small btn-remove';
+    removeBtn.textContent = 'ลบ';
+    removeBtn.addEventListener('click', () => {
+      editItems.splice(idx, 1);
       renderRows();
       updateTotals();
-      modal.style.display = 'block';
-    }
+    });
+
+    right.appendChild(qtyWrap);
+    right.appendChild(subtotalSpan);
+    right.appendChild(removeBtn);
+
+    row.appendChild(nameEl);
+    row.appendChild(right);
+    return row;
+  }
+
+  function renderRows() {
+    rowsWrap.innerHTML = '';
+    editItems.forEach((it, idx) => rowsWrap.appendChild(makeRow(it, idx)));
+  }
+
+  document.getElementById('editOrderAddItem').onclick = () => {
+    const name = prompt('ชื่อสินค้าใหม่:');
+    if (!name) return;
+    const qty = Number(prompt('จำนวน:', '1') || '1');
+    editItems.push({ name, price: 0, qty: isNaN(qty) ? 1 : qty });
+    renderRows();
+    updateTotals();
+  };
+
+  channelSelect.onchange = () => updateTotals();
+
+  document.getElementById('editOrderSaveBtn').onclick = async () => {
+    if (!editItems.length) { alert('ต้องมีรายการอย่างน้อย 1 รายการ'); return; }
+    const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
+    const newOrder = {
+      orderId: order.orderId,
+      datetime: order.datetime,
+      channel: channelSelect.value,
+      subtotal: subtotal.toFixed(2),
+      fee: fee.toFixed(2),
+      finalTotal: finalTotal.toFixed(2),
+      items: editItems.map(it => ({
+        name: it.name,
+        price: Number(it.price),
+        qty: Number(it.qty),
+        subtotal: Number(it.price) * Number(it.qty)
+      }))
+    };
+    await updateOrderInGoogleSheet(newOrder);
+    modal.style.display = 'none';
+    await renderHistoryFromGoogleSheet();
+  };
+
+  document.getElementById('editOrderDeleteBtn').onclick = async () => {
+    if (!confirm(`ลบออเดอร์ ${order.orderId}?`)) return;
+    await deleteOrderInGoogleSheet(order.orderId);
+    modal.style.display = 'none';
+    await renderHistoryFromGoogleSheet();
+  };
+
+  renderRows();
+  updateTotals();
+  modal.style.display = 'block';
+}
 
     document.addEventListener('DOMContentLoaded', () => {
       renderProducts(); renderChannels(); renderCart();
 
+      const historyModal = document.getElementById('historyModal');
       const editProductsModal = document.getElementById('editProductsModal');
       const editChannelsModal = document.getElementById('editChannelsModal');
       const summarizeModal = document.getElementById('summarizeModal');
       const historyFromSheetModal = document.getElementById('historyFromSheetModal');
       const editOrderModal = document.getElementById('editOrderModal');
 
-      document.getElementById('historyBtn').onclick = () => { renderHistoryFromGoogleSheet(); };
-      document.getElementById('editProductsBtn').onclick = () => { renderEditableProducts(); editProductsModal.style.display = "block"; };
-      document.getElementById('editChannelsBtn').onclick = () => { renderEditableChannels(); editChannelsModal.style.display = 'block'; };
-      document.querySelector('.edit-close').onclick = () => { editProductsModal.style.display = "none"; };
-      document.querySelector('.channels-close').onclick = () => { editChannelsModal.style.display = 'none'; };
-      document.querySelector('.summarize-close').onclick = () => { summarizeModal.style.display = 'none'; };
-      document.querySelector('.history-sheet-close')?.addEventListener('click', ()=>{ historyFromSheetModal.style.display = 'none'; });
-      document.querySelector('.edit-order-close').onclick = () => { editOrderModal.style.display = 'none'; };
+      const historyBtn = document.getElementById('historyBtn');
+      const summarizeBtn = document.getElementById('summarizeBtn');
+      const editProductsBtn = document.getElementById('editProductsBtn');
+      const editChannelsBtn = document.getElementById('editChannelsBtn');
+
+      const editCloseBtn = document.querySelector('.edit-close');
+      const channelsCloseBtn = document.querySelector('.channels-close');
+      const summarizeCloseBtn = document.querySelector('.summarize-close');
+      const historySheetCloseBtn = document.querySelector('.history-sheet-close');
+      const editOrderCloseBtn = document.querySelector('.edit-order-close');
+
+      const saveEditBtn = document.getElementById('saveEditBtn');
+      const saveChannelsBtn = document.getElementById('saveChannelsBtn');
+      const addChannelBtn = document.getElementById('addChannelBtn');
+      const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
+      confirmButtonRef = document.getElementById('confirmBtn');
+
+      historyBtn.onclick = () => { renderHistoryFromGoogleSheet(); };
+      editProductsBtn.onclick = () => { renderEditableProducts(); editProductsModal.style.display = "block"; };
+      editChannelsBtn.onclick = () => { renderEditableChannels(); editChannelsModal.style.display = 'block'; };
+      editCloseBtn.onclick = () => { editProductsModal.style.display = "none"; };
+      channelsCloseBtn.onclick = () => { editChannelsModal.style.display = 'none'; };
+      summarizeBtn.onclick = () => { summarizeModal.style.display = 'block'; };
+      summarizeCloseBtn.onclick = () => { summarizeModal.style.display = 'none'; };
+      historySheetCloseBtn.onclick = () => { historyFromSheetModal.style.display = 'none'; };
+      editOrderCloseBtn.onclick = () => { editOrderModal.style.display = 'none'; };
 
       const historySheetClearBtn = document.getElementById('historySheetClearBtn');
       if (historySheetClearBtn) { historySheetClearBtn.disabled = false; historySheetClearBtn.onclick = () => { window.open(SHEET_URL, '_blank'); }; }
 
       window.onclick = (event) => {
+        if (event.target === historyModal) historyModal.style.display = "none";
         if (event.target === editProductsModal) editProductsModal.style.display = "none";
         if (event.target === editChannelsModal) editChannelsModal.style.display = 'none';
         if (event.target === summarizeModal) summarizeModal.style.display = 'none';
@@ -725,18 +896,17 @@ justify-content:flex-end; margin-top:20px;">
         if (event.target === editOrderModal) editOrderModal.style.display = 'none';
       };
 
-      document.getElementById('saveEditBtn').onclick = () => { saveEditedProducts(); };
-      document.getElementById('saveChannelsBtn').onclick = () => { saveEditedChannels(); };
-      document.getElementById('addChannelBtn').onclick = () => {
+      saveEditBtn.onclick = () => { saveEditedProducts(); };
+      saveChannelsBtn.onclick = () => { saveEditedChannels(); };
+      addChannelBtn.onclick = () => {
         const newName = prompt('กรุณาใส่ชื่อช่องทางใหม่:');
         const newFee = prompt('กรุณาใส่ค่าธรรมเนียม (%) เช่น 13:');
         if (newName && !isNaN(newFee)) { channels[newName] = Number(newFee) / 100; renderEditableChannels(); }
         else { alert('ข้อมูลไม่ถูกต้อง'); }
       };
 
-      document.getElementById('fetchAndExportBtn').onclick = handleFetchAndExport;
+      fetchAndExportBtn.onclick = handleFetchAndExport;
 
-      confirmButtonRef = document.getElementById('confirmBtn');
       document.getElementById('confirmBtn').onclick = async () => {
         if(Object.keys(cart).length === 0){ alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน'); return; }
 
@@ -749,7 +919,11 @@ justify-content:flex-end; margin-top:20px;">
         const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
         const dt = new Date().toISOString();
 
-        const orderData = { orderId, datetime: dt, channel: activeChannel, subtotal: subtotal.toFixed(2), fee: fee.toFixed(2), finalTotal: finalTotal.toFixed(2), items: [] };
+        const orderData = {
+          orderId, datetime: dt, channel: activeChannel,
+          subtotal: subtotal.toFixed(2), fee: fee.toFixed(2), finalTotal: finalTotal.toFixed(2),
+          items: []
+        };
         for(const id in cart){
           const it = cart[id]; const itemSubtotal = it.price * it.qty;
           orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
@@ -761,243 +935,205 @@ justify-content:flex-end; margin-top:20px;">
       };
     });
 
-    function renderEditableProducts() {
-      const container = document.getElementById('editCategoriesContainer');
-      container.innerHTML = '';
-      const categoryNames = Object.keys(products);
+/* Editable products/channels functions */
+function renderEditableProducts() {
+  const container = document.getElementById('editCategoriesContainer');
+  container.innerHTML = '';
+  const categoryNames = Object.keys(products);
 
-      categoryNames.forEach(cat => {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'edit-category-section';
-        categoryDiv.innerHTML = `
-          <div class="edit-category-header">
-            <div class="category-name-group">
-              <input type="text" value="${cat}" data-oldname="${cat}">
-              <button class="btn-small btn-delete-cat" data-cat="${cat}">ลบหมวด</button>
-            </div>
-          </div>
-          <div class="edit-list-head">
-            <div>รูป</div>
-            <div>สินค้า</div>
-            <div>ราคา (฿)</div>
-            <div>กำไร (฿)</div>
-            <div></div>
-          </div>
-          <div class="product-list"></div>
-          <button class="btn-small btn-add-item" data-cat="${cat}">+ เพิ่มสินค้าใหม่</button>
-        `;
-        container.appendChild(categoryDiv);
-
-        const productListDiv = categoryDiv.querySelector('.product-list');
-        for (const sub in products[cat]) {
-          const p = products[cat][sub];
-          const itemDiv = document.createElement('div');
-          itemDiv.className = 'product-list-item';
-          itemDiv.innerHTML = `
-            <div class="product-icon-upload">
-              <img src="${p.icon}" alt="${sub}">
-              <input type="file" accept="image/*" data-oldicon="${p.icon}">
-            </div>
-            <div class="product-input-group">
-              <input type="text" placeholder="ชื่อสินค้า" value="${sub}" data-field="sub" data-oldname="${sub}">
-              <input type="number" placeholder="ราคา" value="${p.price}" data-field="price">
-              <input type="number" placeholder="กำไร" value="${p.profit}" data-field="profit">
-            </div>
-            <button class="btn-small btn-delete-item" data-cat="${cat}" data-sub="${sub}">ลบ</button>
-          `;
-          productListDiv.appendChild(itemDiv);
-
-          const fileInput = itemDiv.querySelector('input[type="file"]');
-          fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                const img = itemDiv.querySelector('img'); img.src = event.target.result;
-                fileInput.dataset.newicon = event.target.result;
-              };
-              reader.readAsDataURL(file);
-            }
-          };
-        }
-      });
-
-      document.getElementById('addCategoryBtn').onclick = () => {
-        const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
-        if (newCatName && !products[newCatName]) {
-          products[newCatName] = {};
-          renderEditableProducts();
-        } else if (newCatName) {
-          alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
-        }
-      };
-
-      document.querySelectorAll('.btn-add-item').forEach(btn => {
-        btn.onclick = () => {
-          const cat = btn.dataset.cat;
-          const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
-          if (!newName || products[cat][newName]) {
-            if (newName) alert("ชื่อสินค้านี้มีอยู่แล้ว หรือชื่อไม่ถูกต้อง");
-            return;
-          }
-          products[cat][newName] = { price: 0, icon: "", profit: 0 };
-          renderEditableProducts();
-        };
-      });
-
-      document.querySelectorAll('.btn-delete-item').forEach(btn => {
-        btn.onclick = () => {
-          const cat = btn.dataset.cat; const sub = btn.dataset.sub;
-          if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
-            delete products[cat][sub];
-            renderEditableProducts();
-          }
-        };
-      });
-
-      document.querySelectorAll('.btn-delete-cat').forEach(btn => {
-        btn.onclick = () => {
-          const cat = btn.dataset.cat;
-          if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
-            delete products[cat];
-            renderEditableProducts();
-          }
-        };
-      });
-    }
-
-    function saveEditedProducts() {
-      const container = document.getElementById('editCategoriesContainer');
-      const updatedProducts = {}; let hasError = false;
-
-      container.querySelectorAll('.edit-category-section').forEach(section => {
-        const oldCatName = section.querySelector('.category-name-group input').dataset.oldname;
-        const newCatName = section.querySelector('.category-name-group input').value;
-        if (!newCatName) { alert('ชื่อหมวดหมู่ต้องไม่ว่าง'); hasError = true; return; }
-        if (updatedProducts[newCatName] && newCatName !== oldCatName) { alert(`ชื่อหมวดหมู่ "${newCatName}" มีอยู่แล้ว`); hasError = true; return; }
-        updatedProducts[newCatName] = {};
-
-        section.querySelectorAll('.product-list-item').forEach(item => {
-          const oldName = item.querySelector('[data-field="sub"]').dataset.oldname;
-          const newName = item.querySelector('[data-field="sub"]').value;
-          const icon = item.querySelector('[data-oldicon]').dataset.newicon || item.querySelector('[data-oldicon]').dataset.oldicon;
-          const price = Number(item.querySelector('[data-field="price"]').value);
-          const profit = Number(item.querySelector('[data-field="profit"]').value);
-
-          if (!newName || isNaN(price) || isNaN(profit)) { alert('กรุณาใส่ข้อมูลให้ครบถ้วนและถูกต้อง'); hasError = true; return; }
-          if (updatedProducts[newCatName][newName] && newName !== oldName) { alert(`ชื่อสินค้า "${newName}" มีอยู่แล้วในหมวดหมู่ "${newCatName}"`); hasError = true; return; }
-
-          updatedProducts[newCatName][newName] = { price, icon, profit };
-        });
-      });
-      if (hasError) return;
-
-      products = updatedProducts;
-      saveProductsToLocalStorage();
-      renderProducts();
-      document.getElementById('editProductsModal').style.display = 'none';
-      showToast('บันทึกสินค้าแล้ว');
-    }
-
-    function renderEditableChannels() {
-      const container = document.getElementById('editChannelsContainer');
-      const channelHeader = `
-        <div class="chan-head">
-          <div>ช่องทางการสั่งซื้อ</div>
-          <div>ค่าธรรมเนียม (%)</div>
-          <div></div>
+  categoryNames.forEach(cat => {
+    const categoryDiv = document.createElement('div');
+    categoryDiv.className = 'edit-category-section';
+    categoryDiv.innerHTML = `
+      <div class="edit-category-header">
+        <div class="category-name-group">
+          <input type="text" value="${cat}" data-oldname="${cat}">
+          <button class="btn-small btn-delete-cat" data-cat="${cat}">ลบหมวด</button>
         </div>
+      </div>
+      <div class="edit-list-head">
+        <div>รูป</div>
+        <div>สินค้า</div>
+        <div>ราคา (฿)</div>
+        <div>กำไร (฿)</div>
+        <div></div>
+      </div>
+      <div class="product-list"></div>
+      <button class="btn-small btn-add-item" data-cat="${cat}">+ เพิ่มสินค้าใหม่</button>
+    `;
+    container.appendChild(categoryDiv);
+
+    const productListDiv = categoryDiv.querySelector('.product-list');
+    for (const sub in products[cat]) {
+      const p = products[cat][sub];
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'product-list-item';
+      itemDiv.innerHTML = `
+        <div class="product-icon-upload">
+          <img src="${p.icon}" alt="${sub}">
+          <input type="file" accept="image/*" data-oldicon="${p.icon}">
+        </div>
+        <div class="product-input-group">
+          <input type="text" placeholder="ชื่อสินค้า" value="${sub}" data-field="sub" data-oldname="${sub}">
+          <input type="number" placeholder="ราคา" value="${p.price}" data-field="price">
+          <input type="number" placeholder="กำไร" value="${p.profit}" data-field="profit">
+        </div>
+        <button class="btn-small btn-delete-item" data-cat="${cat}" data-sub="${sub}">ลบ</button>
       `;
-      container.innerHTML = channelHeader;
+      productListDiv.appendChild(itemDiv);
 
-      for (const name in channels) {
-        const div = document.createElement('div');
-        div.className = 'product-list-item';
-        div.innerHTML = `
-          <div class="product-input-group">
-            <input type="text" placeholder="ชื่อช่องทาง" value="${name}" data-field="name" data-oldname="${name}">
-            <input type="number" placeholder="ค่าธรรมเนียม (%)" value="${channels[name] * 100}" data-field="fee">
-          </div>
-          <button class="btn-small btn-delete-item" data-name="${name}">ลบ</button>
-        `;
-        container.appendChild(div);
-      }
-
-      document.querySelectorAll('#editChannelsContainer .btn-delete-item').forEach(btn => {
-        btn.onclick = () => {
-          const name = btn.dataset.name;
-          if (confirm(`คุณต้องการลบช่องทาง "${name}"?`)) {
-            delete channels[name];
-            renderEditableChannels();
-          }
-        };
-      });
-    }
-
-    function saveEditedChannels() {
-      const container = document.getElementById('editChannelsContainer');
-      const updatedChannels = {}; let hasError = false;
-
-      container.querySelectorAll('.product-list-item').forEach(item => {
-        const oldName = item.querySelector('[data-field="name"]').dataset.oldname;
-        const newName = item.querySelector('[data-field="name"]').value;
-        const fee = Number(item.querySelector('[data-field="fee"]').value);
-
-        if (!newName || isNaN(fee)) { alert('กรุณาใส่ข้อมูลช่องทางให้ครบถ้วนและถูกต้อง'); hasError = true; return; }
-        if (updatedChannels[newName] && newName !== oldName) { alert(`ชื่อช่องทาง "${newName}" มีอยู่แล้ว`); hasError = true; return; }
-
-        updatedChannels[newName] = fee / 100;
-      });
-      if (hasError) return;
-
-      channels = updatedChannels;
-      saveChannelsToLocalStorage();
-      document.getElementById('editChannelsModal').style.display = 'none';
-
-      if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
-      renderChannels();
-      renderCart();
-      showToast('บันทึกช่องทางแล้ว');
-    }
-
-    async function updateOrderInGoogleSheet(order) {
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'updateOrder', orderData: order }), headers: { 'Content-Type':'text/plain;charset=utf-8' } });
-        const result = await response.json();
-        if (result.status !== 'success') throw new Error(result.message || 'อัปเดตไม่สำเร็จ');
-        showToast('บันทึกออเดอร์แล้ว');
-      } catch (e) { alert('อัปเดตไม่สำเร็จ: ' + e.message); }
-    }
-    async function deleteOrderInGoogleSheet(orderId) {
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'deleteOrder', orderId }), headers: { 'Content-Type':'text/plain;charset=utf-8' } });
-        const result = await response.json();
-        if (result.status !== 'success') throw new Error(result.message || 'ลบไม่สำเร็จ');
-        showToast('ลบออเดอร์แล้ว');
-      } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const summarizeModal = document.getElementById('summarizeModal');
-      document.getElementById('summarizeBtn').onclick = () => { summarizeModal.style.display = 'block'; };
-      document.querySelector('.summarize-close').onclick = () => { summarizeModal.style.display = 'none'; };
-      document.getElementById('fetchAndExportBtn').onclick = handleFetchAndExport;
-      confirmButtonRef = document.getElementById('confirmBtn');
-      document.getElementById('confirmBtn').onclick = async () => {
-        if(Object.keys(cart).length === 0){ alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน'); return; }
-        setConfirmOrdered();
-        let subtotal = 0; for (const id in cart) { const item = cart[id]; subtotal += item.price * item.qty; }
-        const feeRate = channels[activeChannel] || 0;
-        let fee = subtotal * feeRate; let finalTotal = subtotal - fee;
-        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
-        const dt = new Date().toISOString();
-        const orderData = { orderId, datetime: dt, channel: activeChannel, subtotal: subtotal.toFixed(2), fee: fee.toFixed(2), finalTotal: finalTotal.toFixed(2), items: [] };
-        for(const id in cart){ const it = cart[id]; const itemSubtotal = it.price * it.qty; orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal }); }
-        const ok = await saveOrderToGoogleSheet(orderData);
-        if (ok) showToast('สั่งซื้อสำเร็จ');
-        cart = {}; renderCart();
+      const fileInput = itemDiv.querySelector('input[type="file"]');
+      fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = itemDiv.querySelector('img'); img.src = event.target.result;
+            fileInput.dataset.newicon = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
       };
+    }
+  });
+
+  document.getElementById('addCategoryBtn').onclick = () => {
+    const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
+    if (newCatName && !products[newCatName]) {
+      products[newCatName] = {};
+      renderEditableProducts();
+    } else if (newCatName) {
+      alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
+    }
+  };
+
+  document.querySelectorAll('.btn-add-item').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat;
+      const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
+      if (!newName || products[cat][newName]) {
+        if (newName) alert("ชื่อสินค้านี้มีอยู่แล้ว หรือชื่อไม่ถูกต้อง");
+        return;
+      }
+      products[cat][newName] = { price: 0, icon: "", profit: 0 };
+      renderEditableProducts();
+    };
+  });
+
+  document.querySelectorAll('.btn-delete-item').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat; const sub = btn.dataset.sub;
+      if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
+        delete products[cat][sub];
+        renderEditableProducts();
+      }
+    };
+  });
+
+  document.querySelectorAll('.btn-delete-cat').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat;
+      if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
+        delete products[cat];
+        renderEditableProducts();
+      }
+    };
+  });
+}
+
+function saveEditedProducts() {
+  const container = document.getElementById('editCategoriesContainer');
+  const updatedProducts = {}; let hasError = false;
+
+  container.querySelectorAll('.edit-category-section').forEach(section => {
+    const oldCatName = section.querySelector('.category-name-group input').dataset.oldname;
+    const newCatName = section.querySelector('.category-name-group input').value;
+    if (!newCatName) { alert('ชื่อหมวดหมู่ต้องไม่ว่าง'); hasError = true; return; }
+    if (updatedProducts[newCatName] && newCatName !== oldCatName) { alert(`ชื่อหมวดหมู่ "${newCatName}" มีอยู่แล้ว`); hasError = true; return; }
+    updatedProducts[newCatName] = {};
+
+    section.querySelectorAll('.product-list-item').forEach(item => {
+      const oldName = item.querySelector('[data-field="sub"]').dataset.oldname;
+      const newName = item.querySelector('[data-field="sub"]').value;
+      const icon = item.querySelector('[data-oldicon]').dataset.newicon || item.querySelector('[data-oldicon]').dataset.oldicon;
+      const price = Number(item.querySelector('[data-field="price"]').value);
+      const profit = Number(item.querySelector('[data-field="profit"]').value);
+
+      if (!newName || isNaN(price) || isNaN(profit)) { alert('กรุณาใส่ข้อมูลให้ครบถ้วนและถูกต้อง'); hasError = true; return; }
+      if (updatedProducts[newCatName][newName] && newName !== oldName) { alert(`ชื่อสินค้า "${newName}" มีอยู่แล้วในหมวดหมู่ "${newCatName}"`); hasError = true; return; }
+
+      updatedProducts[newCatName][newName] = { price, icon, profit };
     });
+  });
+  if (hasError) return;
+
+  products = updatedProducts;
+  saveProductsToLocalStorage();
+  renderProducts();
+  document.getElementById('editProductsModal').style.display = 'none';
+  showToast('บันทึกสินค้าแล้ว');
+}
+
+function renderEditableChannels() {
+  const container = document.getElementById('editChannelsContainer');
+  const channelHeader = `
+    <div class="chan-head">
+      <div>ช่องทางการสั่งซื้อ</div>
+      <div>ค่าธรรมเนียม (%)</div>
+      <div></div>
+    </div>
+  `;
+  container.innerHTML = channelHeader;
+
+  for (const name in channels) {
+    const div = document.createElement('div');
+    div.className = 'product-list-item';
+    div.innerHTML = `
+      <div class="product-input-group">
+        <input type="text" placeholder="ชื่อช่องทาง" value="${name}" data-field="name" data-oldname="${name}">
+        <input type="number" placeholder="ค่าธรรมเนียม (%)" value="${channels[name] * 100}" data-field="fee">
+      </div>
+      <button class="btn-small btn-delete-item" data-name="${name}">ลบ</button>
+    `;
+    container.appendChild(div);
+  }
+
+  document.querySelectorAll('#editChannelsContainer .btn-delete-item').forEach(btn => {
+    btn.onclick = () => {
+      const name = btn.dataset.name;
+      if (confirm(`คุณต้องการลบช่องทาง "${name}"?`)) {
+        delete channels[name];
+        renderEditableChannels();
+      }
+    };
+  });
+}
+
+function saveEditedChannels() {
+  const container = document.getElementById('editChannelsContainer');
+  const updatedChannels = {}; let hasError = false;
+
+  container.querySelectorAll('.product-list-item').forEach(item => {
+    const oldName = item.querySelector('[data-field="name"]').dataset.oldname;
+    const newName = item.querySelector('[data-field="name"]').value;
+    const fee = Number(item.querySelector('[data-field="fee"]').value);
+
+    if (!newName || isNaN(fee)) { alert('กรุณาใส่ข้อมูลช่องทางให้ครบถ้วนและถูกต้อง'); hasError = true; return; }
+    if (updatedChannels[newName] && newName !== oldName) { alert(`ชื่อช่องทาง "${newName}" มีอยู่แล้ว`); hasError = true; return; }
+
+    updatedChannels[newName] = fee / 100;
+  });
+  if (hasError) return;
+
+  channels = updatedChannels;
+  saveChannelsToLocalStorage();
+  document.getElementById('editChannelsModal').style.display = 'none';
+
+  if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
+  renderChannels();
+  renderCart();
+  showToast('บันทึกช่องทางแล้ว');
+}
   </script>
 </body>
 </html>
