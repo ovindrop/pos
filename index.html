@@ -7,7 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root{ --radius:10px;
---muted:#666; --accent:#1890ff; }
+--muted:#666; --accent:#1890ff; --success:#0a7b33; }
     body{ font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:16px; background:#f6f7fb; color:#111;
 }
     header{ display:flex; align-items:center; justify-content: space-between; gap:12px; margin-bottom:12px; }
@@ -65,6 +65,9 @@ border-bottom:1px solid #f0f0f0; text-align:center; vertical-align:middle; }
 }
     .btn-primary{ background:#1890ff; color:#fff; border:1px solid #1890ff; }
     .btn-danger{ background:#b40000; color:#fff; border:1px solid #b40000; }
+    .btn-save-edit{ background:linear-gradient(180deg,#22c55e,#16a34a); color:#fff; border:none; padding:10px 16px; border-radius:10px; font-weight:700; box-shadow:0 6px 20px rgba(22,163,74,.25); }
+    .btn-save-edit:hover{ filter:brightness(1.02); }
+    .btn-save-edit:active{ transform:translateY(1px); }
     
     /* แก้ไขปัญหาคอลัมน์ขยับ */
     #cartTable thead th:nth-child(1) { width: 45%;
@@ -168,18 +171,25 @@ margin-bottom: 10px; }
     .product-icon-upload { display:flex; align-items:center; gap:10px; }
     .product-icon-upload img { width:40px; height:40px; object-fit:contain; border:1px solid #eee; border-radius:8px; background:#fff; }
     .product-icon-upload input[type="file"] { width:100%; }
-    .product-input-group { display:grid; grid-template-columns: 1fr 120px 120px; gap:10px; align-items:center; }
-    .product-input-group input { padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+    .edit-category-section .product-input-group { display: contents; }
+    .edit-category-section .product-input-group input { width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
     .edit-category-header { display:flex; justify-content:space-between; align-items:center; gap:10px; }
     .edit-category-header .category-name-group { display:flex; align-items:center; gap:8px; }
     .edit-category-header .category-name-group input { font-size:16px; font-weight:bold; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
     /* Edit Channels Modal - improved layout */
-    .chan-head { display:grid; grid-template-columns: 1fr 160px 40px; gap:10px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
-    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: 1fr 160px 40px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
-    #editChannelsContainer .product-input-group { display:contents; }
+    .chan-head { display:grid; grid-template-columns: 1fr 120px 40px; gap:10px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
+    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: 1fr 120px 40px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    #editChannelsContainer .product-input-group { display: contents; }
     #editChannelsContainer input[type="text"], #editChannelsContainer input[type="number"] { width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+
+    /* Toast */
+    .toast-container{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:9999; }
+    .toast{ background:#10b981; color:#fff; padding:10px 14px; border-radius:10px; box-shadow:0 10px 24px rgba(16,185,129,.3); font-weight:700; opacity:0; transform:translateY(8px); animation:toast-in .2s ease-out forwards; }
+    @keyframes toast-in{ to{ opacity:1; transform:translateY(0);} }
+    .toast-hide{ animation:toast-out .25s ease-in forwards; }
+    @keyframes toast-out{ to{ opacity:0; transform:translateY(8px);} }
   </style>
 </head>
 <body>
@@ -347,6 +357,8 @@ justify-content:flex-end; margin-top:20px;">
     </div>
   </div>
 </div>
+
+  <div id="toastRoot" class="toast-container" style="display:none;"></div>
 
   <script>
     // URLs
@@ -529,6 +541,24 @@ function groupSalesRows(rows) {
   return grouped;
 }
 
+// Toast
+function showToast(message){
+  const root = document.getElementById('toastRoot');
+  if (!root) return;
+  root.style.display = 'flex';
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = message;
+  root.appendChild(t);
+  setTimeout(()=>{ t.classList.add('toast-hide'); }, 5000);
+  t.addEventListener('animationend', (e)=>{
+    if (e.animationName === 'toast-out') {
+      t.remove();
+      if (!root.children.length) root.style.display = 'none';
+    }
+  });
+}
+
 // Apps Script calls
 async function saveOrderToGoogleSheet(order) {
   try {
@@ -538,9 +568,10 @@ async function saveOrderToGoogleSheet(order) {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     });
     const result = await response.json();
-    if (result.status === 'success') alert('บันทึกคำสั่งซื้อเรียบร้อยแล้ว');
-    else alert('บันทึกคำสั่งซื้อไม่สำเร็จ: ' + result.message);
-  } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); }
+    if (result.status === 'success') return true;
+    alert('บันทึกคำสั่งซื้อไม่สำเร็จ: ' + result.message);
+    return false;
+  } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return false; }
 }
 async function getSalesDataFromGoogleSheet(startDate, endDate) {
   try {
@@ -555,7 +586,7 @@ async function getSalesDataFromGoogleSheet(startDate, endDate) {
   } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return []; }
 }
 
-// Update and Delete (Apps Script endpoints needed)
+// Update and Delete
 async function updateOrderInGoogleSheet(order) {
   try {
     const response = await fetch(APPS_SCRIPT_URL, {
@@ -565,7 +596,7 @@ async function updateOrderInGoogleSheet(order) {
     });
     const result = await response.json();
     if (result.status !== 'success') throw new Error(result.message || 'อัปเดตไม่สำเร็จ');
-    alert('อัปเดตออเดอร์เรียบร้อยแล้ว');
+    showToast('บันทึกออเดอร์แล้ว');
   } catch (e) { alert('อัปเดตไม่สำเร็จ: ' + e.message); }
 }
 
@@ -578,7 +609,7 @@ async function deleteOrderInGoogleSheet(orderId) {
     });
     const result = await response.json();
     if (result.status !== 'success') throw new Error(result.message || 'ลบไม่สำเร็จ');
-    alert('ลบออเดอร์เรียบร้อยแล้ว');
+    showToast('ลบออเดอร์แล้ว');
   } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
 }
 
@@ -620,7 +651,7 @@ async function handleFetchAndExport() {
   document.getElementById('summarizeModal').style.display = 'none';
 }
 
-// HISTORY: from Google Sheet, plus Edit/Delete buttons
+// HISTORY
 async function renderHistoryFromGoogleSheet() {
   const historyModal = document.getElementById('historyFromSheetModal');
   const historyContent = document.getElementById('historyFromSheetContent');
@@ -680,7 +711,7 @@ async function renderHistoryFromGoogleSheet() {
   });
 }
 
-// Edit Order Modal logic (locked layout, qty only)
+// Edit Order Modal logic
 function computeOrderTotals(items, channelName) {
   const subtotal = items.reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || 0), 0);
   const feeRate = channels[channelName] || 0;
@@ -843,9 +874,7 @@ function openEditOrderModal(order) {
       const addChannelBtn = document.getElementById('addChannelBtn');
       const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
 
-      // Show history from Google Sheet
       historyBtn.onclick = () => { renderHistoryFromGoogleSheet(); };
-      // Product/channels modals
       editProductsBtn.onclick = () => { renderEditableProducts(); editProductsModal.style.display = "block"; };
       editChannelsBtn.onclick = () => { renderEditableChannels(); editChannelsModal.style.display = 'block'; };
       editCloseBtn.onclick = () => { editProductsModal.style.display = "none"; };
@@ -898,7 +927,8 @@ function openEditOrderModal(order) {
           const it = cart[id]; const itemSubtotal = it.price * it.qty;
           orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
         }
-        await saveOrderToGoogleSheet(orderData);
+        const ok = await saveOrderToGoogleSheet(orderData);
+        if (ok) showToast('สั่งซื้อสำเร็จ');
         cart = {}; renderCart();
       };
     });
@@ -920,10 +950,10 @@ function renderEditableProducts() {
         </div>
       </div>
       <div class="edit-list-head">
-        <div>ไอคอน</div>
-        <div>ชื่อสินค้า</div>
-        <div>ราคา</div>
-        <div>กำไร</div>
+        <div>รูป</div>
+        <div>สินค้า</div>
+        <div>ราคา (฿)</div>
+        <div>กำไร (฿)</div>
         <div></div>
       </div>
       <div class="product-list"></div>
@@ -975,7 +1005,7 @@ function renderEditableProducts() {
     }
   };
 
-  container.querySelectorAll('.btn-add-item').forEach(btn => {
+  document.querySelectorAll('.btn-add-item').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat;
       const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
@@ -988,7 +1018,7 @@ function renderEditableProducts() {
     };
   });
 
-  container.querySelectorAll('.btn-delete-item').forEach(btn => {
+  document.querySelectorAll('.btn-delete-item').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat; const sub = btn.dataset.sub;
       if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
@@ -998,7 +1028,7 @@ function renderEditableProducts() {
     };
   });
 
-  container.querySelectorAll('.btn-delete-cat').forEach(btn => {
+  document.querySelectorAll('.btn-delete-cat').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat;
       if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
@@ -1039,7 +1069,7 @@ function saveEditedProducts() {
   saveProductsToLocalStorage();
   renderProducts();
   document.getElementById('editProductsModal').style.display = 'none';
-  alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
+  showToast('บันทึกสินค้าแล้ว');
 }
 
 function renderEditableChannels() {
@@ -1100,7 +1130,7 @@ function saveEditedChannels() {
   if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
   renderChannels();
   renderCart();
-  alert('บันทึกการแก้ไขช่องทางเรียบร้อยแล้ว');
+  showToast('บันทึกช่องทางแล้ว');
 }
   </script>
 </body>
