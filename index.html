@@ -114,7 +114,9 @@ gap: 8px; font-weight: 700; align-self: flex-end; }
     .total-summary .subtotal-display, .total-summary .final-total-display { font-size: 1em; }
     .confirm-wrap{ display:flex; justify-content:flex-end; width:100%;
 }
-    .confirm{ background:#0a7b33; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
+    .confirm{ background:#0a7b33; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; transition:filter .15s ease; }
+    .confirm:hover{ filter:brightness(1.03); }
+    .confirm.confirm-ordered{ background:#9aa0a6; color:#fff; cursor:default; }
     .confirm:active{ transform:translateY(1px);
 }
     
@@ -162,25 +164,24 @@ margin-bottom: 10px; }
     #summarizeModal .date-input { padding:8px 10px; border:1px solid #ddd; border-radius:6px; }
     #fetchAndExportBtn { padding:12px 18px; font-weight:700; border-radius:8px; font-size:15px; }
 
-    /* Edit Products Modal - improved layout */
+    /* Edit Products Modal - improved responsive fit */
     #editProductsModal .modal-content { max-height: 90vh; display:flex; flex-direction:column; }
     #editProductsScroll { overflow-y:auto; padding-right: 10px; }
-    .edit-list-head { display:grid; grid-template-columns: 120px 1fr 120px 120px 40px; gap:10px; margin:6px 0 8px 0; font-weight:700; color:var(--muted); align-items:center; }
+    .edit-list-head { display:grid; grid-template-columns: 88px minmax(180px,1fr) minmax(96px,120px) minmax(96px,120px) 60px; gap:10px; margin:6px 0 8px 0; font-weight:700; color:var(--muted); align-items:center; }
     .edit-category-section .product-list { margin-top:6px; }
-    .product-list-item { display:grid; grid-template-columns: 120px 1fr 120px 120px 40px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    .product-list-item { display:grid; grid-template-columns: 88px minmax(180px,1fr) minmax(96px,120px) minmax(96px,120px) 60px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
     .product-icon-upload { display:flex; align-items:center; gap:10px; }
     .product-icon-upload img { width:40px; height:40px; object-fit:contain; border:1px solid #eee; border-radius:8px; background:#fff; }
     .product-icon-upload input[type="file"] { width:100%; }
     .edit-category-section .product-input-group { display: contents; }
     .edit-category-section .product-input-group input { width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
-
     .edit-category-header { display:flex; justify-content:space-between; align-items:center; gap:10px; }
     .edit-category-header .category-name-group { display:flex; align-items:center; gap:8px; }
     .edit-category-header .category-name-group input { font-size:16px; font-weight:bold; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
-    /* Edit Channels Modal - improved layout */
-    .chan-head { display:grid; grid-template-columns: 1fr 120px 40px; gap:10px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
-    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: 1fr 120px 40px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
+    /* Edit Channels Modal - compact fit */
+    .chan-head { display:grid; grid-template-columns: minmax(160px,1fr) minmax(96px,120px) 60px; gap:10px; font-weight:700; color:var(--muted); margin:6px 0 8px 0; align-items:center; }
+    #editChannelsContainer .product-list-item { display:grid; grid-template-columns: minmax(160px,1fr) minmax(96px,120px) 60px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f4f6f8; }
     #editChannelsContainer .product-input-group { display: contents; }
     #editChannelsContainer input[type="text"], #editChannelsContainer input[type="number"] { width:100%; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
 
@@ -396,6 +397,25 @@ justify-content:flex-end; margin-top:20px;">
     let activeChannel = 'หน้าร้าน';
     let cart = {};
 
+let confirmButtonRef = null;
+let confirmResetTimer = null;
+
+function setConfirmOrdered() {
+  if (!confirmButtonRef) return;
+  if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
+  confirmButtonRef.textContent = 'สั่งซื้อแล้ว';
+  confirmButtonRef.classList.add('confirm-ordered');
+  confirmButtonRef.disabled = true;
+  confirmResetTimer = setTimeout(resetConfirmButton, 3000);
+}
+function resetConfirmButton() {
+  if (!confirmButtonRef) return;
+  if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
+  confirmButtonRef.textContent = '✅ ยืนยันการสั่งซื้อ';
+  confirmButtonRef.classList.remove('confirm-ordered');
+  confirmButtonRef.disabled = false;
+}
+
 function makeId(cat, sub){ return encodeURIComponent(cat + '||' + sub); }
 function saveProductsToLocalStorage() { localStorage.setItem('products', JSON.stringify(products)); }
 function saveChannelsToLocalStorage() { localStorage.setItem('channels', JSON.stringify(channels)); }
@@ -434,7 +454,9 @@ function renderProducts(){
 
 function addToCart(id, name, price, profit = 0){
   if(!cart[id]){ cart[id] = { id, name, price: Number(price), qty: 0, profit: (profit==null?0:profit) }; }
-  cart[id].qty += 1; renderCart();
+  cart[id].qty += 1;
+  resetConfirmButton(); // revert button immediately when adding items
+  renderCart();
 }
 function changeQty(id, delta){ if(!cart[id]) return; cart[id].qty += delta; if(cart[id].qty <= 0) delete cart[id]; renderCart(); }
 function removeItem(id){ if(cart[id]) delete cart[id]; renderCart(); }
@@ -873,6 +895,7 @@ function openEditOrderModal(order) {
       const saveChannelsBtn = document.getElementById('saveChannelsBtn');
       const addChannelBtn = document.getElementById('addChannelBtn');
       const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
+      confirmButtonRef = document.getElementById('confirmBtn');
 
       historyBtn.onclick = () => { renderHistoryFromGoogleSheet(); };
       editProductsBtn.onclick = () => { renderEditableProducts(); editProductsModal.style.display = "block"; };
@@ -911,6 +934,9 @@ function openEditOrderModal(order) {
 
       document.getElementById('confirmBtn').onclick = async () => {
         if(Object.keys(cart).length === 0){ alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน'); return; }
+
+        setConfirmOrdered(); // change to gray immediately
+
         let subtotal = 0; for (const id in cart) { const item = cart[id]; subtotal += item.price * item.qty; }
         const feeRate = channels[activeChannel] || 0;
         let fee = subtotal * feeRate; let finalTotal = subtotal - fee;
@@ -929,6 +955,7 @@ function openEditOrderModal(order) {
         }
         const ok = await saveOrderToGoogleSheet(orderData);
         if (ok) showToast('สั่งซื้อสำเร็จ');
+
         cart = {}; renderCart();
       };
     });
