@@ -33,7 +33,7 @@ padding:12px; text-align:center; cursor:pointer; transition:all .12s; }
     .item .price{ color:var(--muted); font-size:13px; }
 
     /* cart panel */
-    .card{ background:#f0f8ff;
+    .card{ background:#f0f9ff;
 padding:14px; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.04); }
     .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
 }
@@ -278,7 +278,7 @@ margin-bottom: 10px; }
         </div>
     
 <div class="confirm-wrap">
-          <button id="confirmBtn" class="confirm">✅ ยืนยันการสั่งซื้อ</button>
+          <button id="confirmBtn" class="confirm">ยืนยันการสั่งซื้อ</button>
         </div>
       </div>
     </aside>
@@ -442,7 +442,7 @@ function setConfirmOrdered() {
 function resetConfirmButton() {
   if (!confirmButtonRef) return;
   if (confirmResetTimer) { clearTimeout(confirmResetTimer); confirmResetTimer = null; }
-  confirmButtonRef.textContent = '✅ ยืนยันการสั่งซื้อ';
+  confirmButtonRef.textContent = 'ยืนยันการสั่งซื้อ';
   confirmButtonRef.classList.remove('confirm-ordered');
   confirmButtonRef.disabled = false;
 }
