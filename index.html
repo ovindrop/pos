@@ -962,10 +962,10 @@ function openEditOrderModal(order) {
           const it = cart[id]; const itemSubtotal = it.price * it.qty;
           orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
         }
+        cart = {}; renderCart();
+        
         const ok = await saveOrderToGoogleSheet(orderData);
         if (ok) showToast('สั่งซื้อสำเร็จ');
-
-        cart = {}; renderCart();
       };
     });
 
