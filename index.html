@@ -1031,17 +1031,19 @@ function renderEditableProducts() {
     }
   });
 
+  // (A) Bind เพิ่มหมวดหมู่ใหม่ ทุกครั้งที่ render
   document.getElementById('addCategoryBtn').onclick = () => {
     const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
     if (newCatName && !products[newCatName]) {
       products[newCatName] = {};
-      renderEditableProducts();
+      renderEditableProducts(); // re-render
     } else if (newCatName) {
       alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
     }
   };
 
-  document.querySelectorAll('.btn-add-item').forEach(btn => {
+  // (B) Bind เพิ่มสินค้าใหม่ ทุกครั้งที่ render
+  container.querySelectorAll('.btn-add-item').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat;
       const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
@@ -1054,7 +1056,8 @@ function renderEditableProducts() {
     };
   });
 
-  document.querySelectorAll('.btn-delete-item').forEach(btn => {
+  // (C) Bind ลบสินค้า
+  container.querySelectorAll('.btn-delete-item').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat; const sub = btn.dataset.sub;
       if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
@@ -1064,7 +1067,8 @@ function renderEditableProducts() {
     };
   });
 
-  document.querySelectorAll('.btn-delete-cat').forEach(btn => {
+  // (D) Bind ลบหมวดหมู่
+  container.querySelectorAll('.btn-delete-cat').forEach(btn => {
     btn.onclick = () => {
       const cat = btn.dataset.cat;
       if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
