@@ -233,10 +233,7 @@ margin-bottom: 10px; }
 </head>
 <body>
   <header>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <h1 id="posTitle" style="margin: 0;">Ovindrop Cyanotype</h1>
-      <button id="editTitleBtn" class="btn-small">แก้ไขชื่อ</button>
-    </div>
+    <h1>Ovindrop Cyanotype</h1>
     <div class="header-buttons">
       <button id="editProductsBtn" class="btn-small">แก้ไขรายการสินค้า</button>
       <button id="historyBtn" class="btn-small">ประวัติการซื้อ</button>
@@ -401,21 +398,6 @@ justify-content:flex-end; margin-top:20px;">
   <div id="toastRoot" class="toast-container" style="display:none;"></div>
 
   <script>
-    // ====== เพิ่มฟังก์ชันแก้ไขชื่อ POS ======
-    document.addEventListener('DOMContentLoaded', function() {
-      const savedTitle = localStorage.getItem('posTitle');
-      if (savedTitle) document.getElementById('posTitle').textContent = savedTitle;
-      document.getElementById('editTitleBtn').onclick = function() {
-        const h1 = document.getElementById('posTitle');
-        const newTitle = prompt('กรุณาใส่ชื่อ POS ใหม่:', h1.textContent);
-        if (newTitle && newTitle.trim() !== '') {
-          h1.textContent = newTitle.trim();
-          localStorage.setItem('posTitle', newTitle.trim());
-        }
-      };
-    });
-    // ====== END ======
-
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuc3UDjWl4IWS6y2r5QZjc2NRqKAsJee_TTJe97IXFwWvPeVHfwNAsM7cOkZKJG6l5rw/exec";
     const SPREADSHEET_ID = "1o2H4Vc6SNf31OIM8ZurpS5CC-gp9m60GcrNdBdKCs20";
     const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`;
@@ -557,7 +539,437 @@ function renderCart() {
   tbody.querySelectorAll('.btn-remove').forEach(btn => btn.addEventListener('click', () => { if (confirm('ยืนยันการลบรายการนี้?')) removeItem(btn.dataset.id); }));
 }
 
-// =========== แก้ไข event delegation สำหรับเพิ่ม/ลบสินค้า/หมวด ===========
+// Group rows into orders
+function groupSalesRows(rows) {
+  const grouped = {};
+  let currentOrderId = null;
+  (rows || []).forEach((r) => {
+    const explicitOrderId = r["Order ID"];
+    const orderId = explicitOrderId || currentOrderId;
+    if (!orderId) return;
+    currentOrderId = orderId;
+    if (!grouped[orderId]) {
+      grouped[orderId] = {
+        orderId: orderId,
+        datetime: r["Datetime"] || "",
+        channel: r["Channel"] || "",
+        fee: r["Fee"] ?? 0,
+        finalTotal: r["Final Total"] ?? 0,
+        items: []
+      };
+    } else {
+      if (!grouped[orderId].datetime && r["Datetime"]) grouped[orderId].datetime = r["Datetime"];
+      if (!grouped[orderId].channel && r["Channel"]) grouped[orderId].channel = r["Channel"];
+      if ((grouped[orderId].fee === 0 || grouped[orderId].fee === "") && (r["Fee"] ?? "") !== "") grouped[orderId].fee = r["Fee"];
+      if ((grouped[orderId].finalTotal === 0 || grouped[orderId].finalTotal === "") && (r["Final Total"] ?? "") !== "") grouped[orderId].finalTotal = r["Final Total"];
+    }
+    const itemName = r["Item Name"];
+    if (itemName) {
+      grouped[orderId].items.push({
+        name: itemName,
+        price: Number(r["Price"] ?? 0),
+        qty: Number(r["Quantity"] ?? 0),
+        subtotal: Number(r["Total"] ?? 0)
+      });
+    }
+  });
+  return grouped;
+}
+
+// Toast
+function showToast(message){
+  const root = document.getElementById('toastRoot');
+  if (!root) return;
+  root.style.display = 'flex';
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = message;
+  root.appendChild(t);
+  setTimeout(()=>{ t.classList.add('toast-hide'); }, 5000);
+  t.addEventListener('animationend', (e)=>{
+    if (e.animationName === 'toast-out') {
+      t.remove();
+      if (!root.children.length) root.style.display = 'none';
+    }
+  });
+}
+
+// Apps Script calls
+async function saveOrderToGoogleSheet(order) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveOrder', orderData: order }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status === 'success') return true;
+    alert('บันทึกคำสั่งซื้อไม่สำเร็จ: ' + result.message);
+    return false;
+  } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return false; }
+}
+async function getSalesDataFromGoogleSheet(startDate, endDate) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getSalesData', startDate, endDate }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status === 'success') return result.data;
+    alert('ดึงข้อมูลไม่สำเร็จ: ' + result.message); return [];
+  } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message); return []; }
+}
+
+// Update and Delete
+async function updateOrderInGoogleSheet(order) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateOrder', orderData: order }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error(result.message || 'อัปเดตไม่สำเร็จ');
+    showToast('บันทึกออเดอร์แล้ว');
+  } catch (e) { alert('อัปเดตไม่สำเร็จ: ' + e.message); }
+}
+
+async function deleteOrderInGoogleSheet(orderId) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteOrder', orderId }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    });
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error(result.message || 'ลบไม่สำเร็จ');
+    showToast('ลบออเดอร์แล้ว');
+  } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); }
+}
+
+function exportDataToXLSX(data) {
+  if (!data || data.length === 0) { alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก'); return; }
+  const rows = [["Order ID","Datetime (Asia/Bangkok)","Channel","สินค้า","ราคา","จำนวน","ราคารวม","ค่าธรรมเนียม","ยอดที่ได้รับ"]];
+  const groupedData = groupSalesRows(data);
+  const orderIds = Object.keys(groupedData).sort();
+  orderIds.forEach(orderId => {
+    const order = groupedData[orderId];
+    const items = order.items || [];
+    if (items.length === 0) {
+      rows.push([order.orderId || "", order.datetime || "", order.channel || "", "", "", "", "", order.fee ?? "", order.finalTotal ?? ""]);
+      return;
+    }
+    rows.push([order.orderId || "", order.datetime || "", order.channel || "", items[0].name, items[0].price, items[0].qty, items[0].subtotal, order.fee ?? "", order.finalTotal ?? ""]);
+    for (let i = 1; i < items.length; i++) {
+      const it = items[i]; rows.push(["", "", "", it.name, it.price, it.qty, it.subtotal, "", ""]);
+    }
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "สรุปยอดการขาย");
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  const filename = `สรุปยอด_${startDate}_ถึง_${endDate}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
+async function handleFetchAndExport() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  if (!startDate || !endDate) { alert('กรุณาเลือกช่วงเวลาให้ครบถ้วน'); return; }
+  const btn = document.getElementById('fetchAndExportBtn');
+  btn.textContent = "กำลังดึงข้อมูล..."; btn.disabled = true;
+  const salesData = await getSalesDataFromGoogleSheet(startDate, endDate);
+  btn.textContent = "ดึงข้อมูลและ Export"; btn.disabled = false;
+  exportDataToXLSX(salesData);
+  document.getElementById('summarizeModal').style.display = 'none';
+}
+
+// HISTORY
+async function renderHistoryFromGoogleSheet() {
+  const historyModal = document.getElementById('historyFromSheetModal');
+  const historyContent = document.getElementById('historyFromSheetContent');
+  const historyLoader = document.getElementById('historyLoader');
+
+  historyModal.style.display = 'block';
+  historyContent.style.display = 'none';
+  historyLoader.style.display = 'flex';
+
+  const salesData = await getSalesDataFromGoogleSheet("1900-01-01", "2999-12-31");
+  historyLoader.style.display = 'none';
+  historyContent.style.display = 'block';
+
+  if (!salesData || salesData.length === 0) {
+    historyContent.innerHTML = '<p>ไม่พบประวัติการสั่งซื้อ</p>'; return;
+  }
+
+  const groupedData = groupSalesRows(salesData);
+  historyContent.innerHTML = '';
+  const orderIds = Object.keys(groupedData).sort().reverse();
+
+  orderIds.forEach(orderId => {
+    const order = groupedData[orderId];
+    const orderDiv = document.createElement('div');
+    orderDiv.className = 'history-detail';
+    orderDiv.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <div>
+          <h4 style="margin:0 0 6px 0;">รายการที่: ${order.orderId || "ไม่ระบุ"}</h4>
+          <p style="margin:0;">วันที่: ${order.datetime || "ไม่ระบุ"}</p>
+          <p style="margin:0;">ช่องทาง: ${order.channel || "ไม่ระบุ"}</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-small btn-primary edit-order-btn" data-order="${order.orderId}">แก้ไขรายการ</button>
+          <button class="btn-small btn-danger delete-order-btn" data-order="${order.orderId}">ลบออเดอร์</button>
+        </div>
+      </div>
+      <div class="history-detail-items" style="margin-top:8px;">
+        <ul>
+          ${(order.items || []).map(item => `
+            <li>${item.name || "ไม่ระบุ"} (${item.qty} ชิ้น) - ${item.subtotal || "0"} ฿</li>
+          `).join('')}
+        </ul>
+      </div>
+      <p><strong>ยอดที่ได้รับ: ${order.finalTotal || "0"} ฿</strong></p>
+    `;
+    historyContent.appendChild(orderDiv);
+
+    orderDiv.querySelector('.edit-order-btn').addEventListener('click', () => openEditOrderModal(order));
+    orderDiv.querySelector('.delete-order-btn').addEventListener('click', async () => {
+      if (!confirm(`ลบออเดอร์ ${order.orderId}?`)) return;
+      await deleteOrderInGoogleSheet(order.orderId);
+      await renderHistoryFromGoogleSheet();
+    });
+  });
+}
+
+// Edit Order Modal logic
+function computeOrderTotals(items, channelName) {
+  const subtotal = items.reduce((s, it) => s + Number(it.price || 0) * Number(it.qty || 0), 0);
+  const feeRate = channels[channelName] || 0;
+  const fee = subtotal * feeRate;
+  const finalTotal = subtotal - fee;
+  return { subtotal, fee, finalTotal };
+}
+
+function openEditOrderModal(order) {
+  const modal = document.getElementById('editOrderModal');
+  const rowsWrap = document.getElementById('editOrderRows');
+  const idSpan = document.getElementById('editOrderId');
+  const dtSpan = document.getElementById('editOrderDatetime');
+  const channelSelect = document.getElementById('editOrderChannel');
+  const subtotalEl = document.getElementById('editSubtotal');
+  const feeEl = document.getElementById('editFee');
+  const finalEl = document.getElementById('editFinalTotal');
+
+  idSpan.textContent = order.orderId || '';
+  dtSpan.textContent = order.datetime || '';
+
+  channelSelect.innerHTML = '';
+  Object.keys(channels).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    if (name === (order.channel || '')) opt.selected = true;
+    channelSelect.appendChild(opt);
+  });
+
+  const editItems = (order.items || []).map(it => ({ name: it.name, price: Number(it.price || 0), qty: Number(it.qty || 0) }));
+
+  function updateTotals() {
+    const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
+    subtotalEl.textContent = subtotal.toFixed(2);
+    feeEl.textContent = fee.toFixed(2);
+    finalEl.textContent = finalTotal.toFixed(2);
+  }
+
+  function makeRow(it, idx) {
+    const row = document.createElement('div');
+    row.className = 'edit-item-row';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'edit-item-name';
+    nameEl.textContent = it.name || '(ไม่มีชื่อสินค้า)';
+
+    const right = document.createElement('div');
+    right.className = 'edit-item-right';
+
+    const qtyWrap = document.createElement('div');
+    qtyWrap.className = 'edit-item-qty';
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.min = '0';
+    qtyInput.step = '1';
+    qtyInput.value = String(it.qty);
+    qtyInput.addEventListener('input', () => {
+      const val = Number(qtyInput.value || 0);
+      editItems[idx].qty = isNaN(val) ? 0 : val;
+      subtotalSpan.textContent = (Number(editItems[idx].price) * Number(editItems[idx].qty)).toFixed(2) + ' ฿';
+      updateTotals();
+    });
+    qtyWrap.appendChild(qtyInput);
+
+    const subtotalSpan = document.createElement('div');
+    subtotalSpan.className = 'edit-item-subtotal';
+    subtotalSpan.textContent = (Number(it.price) * Number(it.qty)).toFixed(2) + ' ฿';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-small btn-remove';
+    removeBtn.textContent = 'ลบ';
+    removeBtn.addEventListener('click', () => {
+      editItems.splice(idx, 1);
+      renderRows();
+      updateTotals();
+    });
+
+    right.appendChild(qtyWrap);
+    right.appendChild(subtotalSpan);
+    right.appendChild(removeBtn);
+
+    row.appendChild(nameEl);
+    row.appendChild(right);
+    return row;
+  }
+
+  function renderRows() {
+    rowsWrap.innerHTML = '';
+    editItems.forEach((it, idx) => rowsWrap.appendChild(makeRow(it, idx)));
+  }
+
+  document.getElementById('editOrderAddItem').onclick = () => {
+    const name = prompt('ชื่อสินค้าใหม่:');
+    if (!name) return;
+    const qty = Number(prompt('จำนวน:', '1') || '1');
+    editItems.push({ name, price: 0, qty: isNaN(qty) ? 1 : qty });
+    renderRows();
+    updateTotals();
+  };
+
+  channelSelect.onchange = () => updateTotals();
+
+  document.getElementById('editOrderSaveBtn').onclick = async () => {
+    if (!editItems.length) { alert('ต้องมีรายการอย่างน้อย 1 รายการ'); return; }
+    const { subtotal, fee, finalTotal } = computeOrderTotals(editItems, channelSelect.value);
+    const newOrder = {
+      orderId: order.orderId,
+      datetime: order.datetime,
+      channel: channelSelect.value,
+      subtotal: subtotal.toFixed(2),
+      fee: fee.toFixed(2),
+      finalTotal: finalTotal.toFixed(2),
+      items: editItems.map(it => ({
+        name: it.name,
+        price: Number(it.price),
+        qty: Number(it.qty),
+        subtotal: Number(it.price) * Number(it.qty)
+      }))
+    };
+    await updateOrderInGoogleSheet(newOrder);
+    modal.style.display = 'none';
+    await renderHistoryFromGoogleSheet();
+  };
+
+  document.getElementById('editOrderDeleteBtn').onclick = async () => {
+    if (!confirm(`ลบออเดอร์ ${order.orderId}?`)) return;
+    await deleteOrderInGoogleSheet(order.orderId);
+    modal.style.display = 'none';
+    await renderHistoryFromGoogleSheet();
+  };
+
+  renderRows();
+  updateTotals();
+  modal.style.display = 'block';
+}
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderProducts(); renderChannels(); renderCart();
+
+      const historyModal = document.getElementById('historyModal');
+      const editProductsModal = document.getElementById('editProductsModal');
+      const editChannelsModal = document.getElementById('editChannelsModal');
+      const summarizeModal = document.getElementById('summarizeModal');
+      const historyFromSheetModal = document.getElementById('historyFromSheetModal');
+      const editOrderModal = document.getElementById('editOrderModal');
+
+      const historyBtn = document.getElementById('historyBtn');
+      const summarizeBtn = document.getElementById('summarizeBtn');
+      const editProductsBtn = document.getElementById('editProductsBtn');
+      const editChannelsBtn = document.getElementById('editChannelsBtn');
+
+      const editCloseBtn = document.querySelector('.edit-close');
+      const channelsCloseBtn = document.querySelector('.channels-close');
+      const summarizeCloseBtn = document.querySelector('.summarize-close');
+      const historySheetCloseBtn = document.querySelector('.history-sheet-close');
+      const editOrderCloseBtn = document.querySelector('.edit-order-close');
+
+      const saveEditBtn = document.getElementById('saveEditBtn');
+      const saveChannelsBtn = document.getElementById('saveChannelsBtn');
+      const addChannelBtn = document.getElementById('addChannelBtn');
+      const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
+      confirmButtonRef = document.getElementById('confirmBtn');
+
+      historyBtn.onclick = () => { renderHistoryFromGoogleSheet(); };
+      editProductsBtn.onclick = () => { renderEditableProducts(); editProductsModal.style.display = "block"; };
+      editChannelsBtn.onclick = () => { renderEditableChannels(); editChannelsModal.style.display = 'block'; };
+      editCloseBtn.onclick = () => { editProductsModal.style.display = "none"; };
+      channelsCloseBtn.onclick = () => { editChannelsModal.style.display = 'none'; };
+      summarizeBtn.onclick = () => { summarizeModal.style.display = 'block'; };
+      summarizeCloseBtn.onclick = () => { summarizeModal.style.display = 'none'; };
+      historySheetCloseBtn.onclick = () => { historyFromSheetModal.style.display = 'none'; };
+      editOrderCloseBtn.onclick = () => { editOrderModal.style.display = 'none'; };
+
+      const historySheetClearBtn = document.getElementById('historySheetClearBtn');
+      if (historySheetClearBtn) { historySheetClearBtn.disabled = false; historySheetClearBtn.onclick = () => { window.open(SHEET_URL, '_blank'); }; }
+
+      window.onclick = (event) => {
+        if (event.target === historyModal) historyModal.style.display = "none";
+        if (event.target === editProductsModal) editProductsModal.style.display = "none";
+        if (event.target === editChannelsModal) editChannelsModal.style.display = 'none';
+        if (event.target === summarizeModal) summarizeModal.style.display = 'none';
+        if (event.target === historyFromSheetModal) historyFromSheetModal.style.display = 'none';
+        if (event.target === editOrderModal) editOrderModal.style.display = 'none';
+      };
+
+      saveEditBtn.onclick = () => { saveEditedProducts(); };
+      saveChannelsBtn.onclick = () => { saveEditedChannels(); };
+      addChannelBtn.onclick = () => {
+        const newName = prompt('กรุณาใส่ชื่อช่องทางใหม่:');
+        const newFee = prompt('กรุณาใส่ค่าธรรมเนียม (%) เช่น 13:');
+        if (newName && !isNaN(newFee)) { channels[newName] = Number(newFee) / 100; renderEditableChannels(); }
+        else { alert('ข้อมูลไม่ถูกต้อง'); }
+      };
+
+      fetchAndExportBtn.onclick = handleFetchAndExport;
+
+      document.getElementById('confirmBtn').onclick = async () => {
+        if(Object.keys(cart).length === 0){ alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน'); return; }
+
+        setConfirmOrdered();
+
+        let subtotal = 0; for (const id in cart) { const item = cart[id]; subtotal += item.price * item.qty; }
+        const feeRate = channels[activeChannel] || 0;
+        let fee = subtotal * feeRate; let finalTotal = subtotal - fee;
+
+        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
+        const dt = new Date().toISOString();
+
+        const orderData = {
+          orderId, datetime: dt, channel: activeChannel,
+          subtotal: subtotal.toFixed(2), fee: fee.toFixed(2), finalTotal: finalTotal.toFixed(2),
+          items: []
+        };
+        for(const id in cart){
+          const it = cart[id]; const itemSubtotal = it.price * it.qty;
+          orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
+        }
+        cart = {}; renderCart();
+        
+        const ok = await saveOrderToGoogleSheet(orderData);
+        if (ok) showToast('สั่งซื้อสำเร็จ');
+      };
+    });
+
+/* Editable products/channels functions */
 function renderEditableProducts() {
   const container = document.getElementById('editCategoriesContainer');
   container.innerHTML = '';
@@ -619,21 +1031,19 @@ function renderEditableProducts() {
     }
   });
 
-  // ใช้ event delegation
-  document.getElementById('editProductsScroll').onclick = function(e) {
-    // เพิ่มหมวดหมู่ใหม่
-    if (e.target && e.target.id === 'addCategoryBtn') {
-      const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
-      if (newCatName && !products[newCatName]) {
-        products[newCatName] = {};
-        renderEditableProducts();
-      } else if (newCatName) {
-        alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
-      }
+  document.getElementById('addCategoryBtn').onclick = () => {
+    const newCatName = prompt("กรุณาใส่ชื่อหมวดหมู่ใหม่:");
+    if (newCatName && !products[newCatName]) {
+      products[newCatName] = {};
+      renderEditableProducts();
+    } else if (newCatName) {
+      alert("ชื่อหมวดหมู่นี้มีอยู่แล้ว");
     }
-    // เพิ่มสินค้าใหม่
-    if (e.target && e.target.classList.contains('btn-add-item') && e.target.dataset.cat) {
-      const cat = e.target.dataset.cat;
+  };
+
+  document.querySelectorAll('.btn-add-item').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat;
       const newName = prompt("กรุณาใส่ชื่อสินค้าใหม่ (เช่น 100mL):");
       if (!newName || products[cat][newName]) {
         if (newName) alert("ชื่อสินค้านี้มีอยู่แล้ว หรือชื่อไม่ถูกต้อง");
@@ -641,26 +1051,29 @@ function renderEditableProducts() {
       }
       products[cat][newName] = { price: 0, icon: "", profit: 0 };
       renderEditableProducts();
-    }
-    // ลบสินค้า
-    if (e.target && e.target.classList.contains('btn-delete-item')) {
-      const cat = e.target.dataset.cat; const sub = e.target.dataset.sub;
-      if (cat && sub && confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
+    };
+  });
+
+  document.querySelectorAll('.btn-delete-item').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat; const sub = btn.dataset.sub;
+      if (confirm(`คุณต้องการลบ "${sub}" จาก "${cat}"?`)) {
         delete products[cat][sub];
         renderEditableProducts();
       }
-    }
-    // ลบหมวดหมู่
-    if (e.target && e.target.classList.contains('btn-delete-cat')) {
-      const cat = e.target.dataset.cat;
-      if (cat && confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
+    };
+  });
+
+  document.querySelectorAll('.btn-delete-cat').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat;
+      if (confirm(`คุณต้องการลบหมวดหมู่ "${cat}" และสินค้าทั้งหมดในนั้น?`)) {
         delete products[cat];
         renderEditableProducts();
       }
-    }
-  };
+    };
+  });
 }
-// =========== END event delegation ===========
 
 function saveEditedProducts() {
   const container = document.getElementById('editCategoriesContainer');
@@ -695,7 +1108,6 @@ function saveEditedProducts() {
   showToast('บันทึกสินค้าแล้ว');
 }
 
-// =========== event delegation สำหรับช่องทางการสั่งซื้อ ===========
 function renderEditableChannels() {
   const container = document.getElementById('editChannelsContainer');
   const channelHeader = `
@@ -720,26 +1132,16 @@ function renderEditableChannels() {
     container.appendChild(div);
   }
 
-  // ใช้ event delegation
-  document.getElementById('editChannelsModal').onclick = function(e) {
-    // เพิ่มช่องทางใหม่
-    if (e.target && e.target.id === 'addChannelBtn') {
-      const newName = prompt('กรุณาใส่ชื่อช่องทางใหม่:');
-      const newFee = prompt('กรุณาใส่ค่าธรรมเนียม (%) เช่น 13:');
-      if (newName && !isNaN(newFee)) { channels[newName] = Number(newFee) / 100; renderEditableChannels(); }
-      else { alert('ข้อมูลไม่ถูกต้อง'); }
-    }
-    // ลบช่องทาง
-    if (e.target && e.target.classList.contains('btn-delete-item')) {
-      const name = e.target.dataset.name;
-      if (name && confirm(`คุณต้องการลบช่องทาง "${name}"?`)) {
+  document.querySelectorAll('#editChannelsContainer .btn-delete-item').forEach(btn => {
+    btn.onclick = () => {
+      const name = btn.dataset.name;
+      if (confirm(`คุณต้องการลบช่องทาง "${name}"?`)) {
         delete channels[name];
         renderEditableChannels();
       }
-    }
-  };
+    };
+  });
 }
-// =========== END event delegation ===========
 
 function saveEditedChannels() {
   const container = document.getElementById('editChannelsContainer');
@@ -766,88 +1168,6 @@ function saveEditedChannels() {
   renderCart();
   showToast('บันทึกช่องทางแล้ว');
 }
-// ---- (ส่วนอื่นๆ ใน script ไม่เปลี่ยน) ----
-
-    document.addEventListener('DOMContentLoaded', () => {
-      renderProducts(); renderChannels(); renderCart();
-
-      const historyModal = document.getElementById('historyModal');
-      const editProductsModal = document.getElementById('editProductsModal');
-      const editChannelsModal = document.getElementById('editChannelsModal');
-      const summarizeModal = document.getElementById('summarizeModal');
-      const historyFromSheetModal = document.getElementById('historyFromSheetModal');
-      const editOrderModal = document.getElementById('editOrderModal');
-
-      const historyBtn = document.getElementById('historyBtn');
-      const summarizeBtn = document.getElementById('summarizeBtn');
-      const editProductsBtn = document.getElementById('editProductsBtn');
-      const editChannelsBtn = document.getElementById('editChannelsBtn');
-
-      const editCloseBtn = document.querySelector('.edit-close');
-      const channelsCloseBtn = document.querySelector('.channels-close');
-      const summarizeCloseBtn = document.querySelector('.summarize-close');
-      const historySheetCloseBtn = document.querySelector('.history-sheet-close');
-      const editOrderCloseBtn = document.querySelector('.edit-order-close');
-
-      const saveEditBtn = document.getElementById('saveEditBtn');
-      const saveChannelsBtn = document.getElementById('saveChannelsBtn');
-      const addChannelBtn = document.getElementById('addChannelBtn');
-      const fetchAndExportBtn = document.getElementById('fetchAndExportBtn');
-      confirmButtonRef = document.getElementById('confirmBtn');
-
-      historyBtn.onclick = () => { renderHistoryFromGoogleSheet(); };
-      editProductsBtn.onclick = () => { renderEditableProducts(); editProductsModal.style.display = "block"; };
-      editChannelsBtn.onclick = () => { renderEditableChannels(); editChannelsModal.style.display = 'block'; };
-      editCloseBtn.onclick = () => { editProductsModal.style.display = "none"; };
-      channelsCloseBtn.onclick = () => { editChannelsModal.style.display = 'none'; };
-      summarizeBtn.onclick = () => { summarizeModal.style.display = 'block'; };
-      summarizeCloseBtn.onclick = () => { summarizeModal.style.display = 'none'; };
-      historySheetCloseBtn.onclick = () => { historyFromSheetModal.style.display = 'none'; };
-      editOrderCloseBtn.onclick = () => { editOrderModal.style.display = 'none'; };
-
-      const historySheetClearBtn = document.getElementById('historySheetClearBtn');
-      if (historySheetClearBtn) { historySheetClearBtn.disabled = false; historySheetClearBtn.onclick = () => { window.open(SHEET_URL, '_blank'); }; }
-
-      window.onclick = (event) => {
-        if (event.target === historyModal) historyModal.style.display = "none";
-        if (event.target === editProductsModal) editProductsModal.style.display = "none";
-        if (event.target === editChannelsModal) editChannelsModal.style.display = 'none';
-        if (event.target === summarizeModal) summarizeModal.style.display = 'none';
-        if (event.target === historyFromSheetModal) historyFromSheetModal.style.display = 'none';
-        if (event.target === editOrderModal) editOrderModal.style.display = 'none';
-      };
-
-      saveEditBtn.onclick = () => { saveEditedProducts(); };
-      saveChannelsBtn.onclick = () => { saveEditedChannels(); };
-      fetchAndExportBtn.onclick = handleFetchAndExport;
-
-      document.getElementById('confirmBtn').onclick = async () => {
-        if(Object.keys(cart).length === 0){ alert('ตะกร้าว่าง โปรดเพิ่มสินค้าก่อนยืนยัน'); return; }
-
-        setConfirmOrdered();
-
-        let subtotal = 0; for (const id in cart) { const item = cart[id]; subtotal += item.price * item.qty; }
-        const feeRate = channels[activeChannel] || 0;
-        let fee = subtotal * feeRate; let finalTotal = subtotal - fee;
-
-        const orderId = 'INV' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'');
-        const dt = new Date().toISOString();
-
-        const orderData = {
-          orderId, datetime: dt, channel: activeChannel,
-          subtotal: subtotal.toFixed(2), fee: fee.toFixed(2), finalTotal: finalTotal.toFixed(2),
-          items: []
-        };
-        for(const id in cart){
-          const it = cart[id]; const itemSubtotal = it.price * it.qty;
-          orderData.items.push({ name: it.name, price: it.price, qty: it.qty, subtotal: itemSubtotal });
-        }
-        cart = {}; renderCart();
-        
-        const ok = await saveOrderToGoogleSheet(orderData);
-        if (ok) showToast('สั่งซื้อสำเร็จ');
-      };
-    });
   </script>
 </body>
 </html>
