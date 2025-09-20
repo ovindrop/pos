@@ -33,7 +33,7 @@ padding:12px; text-align:center; cursor:pointer; transition:all .12s; }
     .item .price{ color:var(--muted); font-size:13px; }
 
     /* cart panel */
-    .card{ background:#ebf6ff;
+    .card{ background:#f0f8ff;
 padding:14px; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.04); }
     .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
 }
@@ -233,9 +233,11 @@ margin-bottom: 10px; }
 </head>
 <body>
   <header>
-    <h1 id="posTitle">Ovindrop Cyanotype</h1>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <h1 id="posTitle" style="margin: 0;">Ovindrop Cyanotype</h1>
+      <button id="editTitleBtn" class="btn-small">แก้ไขชื่อ</button>
+    </div>
     <div class="header-buttons">
-      <button id="editTitleBtn" class="btn-small">แก้ไขชื่อ POS</button>
       <button id="editProductsBtn" class="btn-small">แก้ไขรายการสินค้า</button>
       <button id="historyBtn" class="btn-small">ประวัติการซื้อ</button>
       <button id="summarizeBtn" class="btn-small">สรุปยอด</button>
