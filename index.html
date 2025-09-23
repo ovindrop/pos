@@ -1169,6 +1169,7 @@ function saveEditedChannels() {
   saveChannelsToLocalStorage();
   document.getElementById('editChannelsModal').style.display = 'none';
 
+  const keys = Object.keys(channels);
   if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
   localStorage.setItem('activeChannel', activeChannel);
   renderChannels();
