@@ -407,7 +407,8 @@ justify-content:flex-end; margin-top:20px;">
 
     let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
     let channels = JSON.parse(localStorage.getItem('channels')) || defaultChannels;
-    let activeChannel = 'หน้าร้าน';
+    let activeChannel = localStorage.getItem('activeChannel') || 'หน้าร้าน';
+    if (!channels[activeChannel]) activeChannel = Object.keys(channels)[0];
     let cart = {};
 
 let confirmButtonRef = null;
@@ -485,6 +486,7 @@ function renderChannels() {
     if (channelName === activeChannel) button.classList.add('active');
     button.onclick = () => {
       activeChannel = channelName;
+      localStorage.setItem('activeChannel', activeChannel);
       document.querySelectorAll('.channel-button').forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
       renderCart();
@@ -1168,6 +1170,7 @@ function saveEditedChannels() {
   document.getElementById('editChannelsModal').style.display = 'none';
 
   if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
+  localStorage.setItem('activeChannel', activeChannel);
   renderChannels();
   renderCart();
   showToast('บันทึกช่องทางแล้ว');
