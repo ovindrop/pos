@@ -1170,7 +1170,7 @@ function saveEditedChannels() {
   document.getElementById('editChannelsModal').style.display = 'none';
 
   const keys = Object.keys(channels);
-  if (!channels[activeChannel]) { activeChannel = Object.keys(channels)[0]; }
+  if (!channels[activeChannel]) activeChannel = keys[keys.length - 1];
   localStorage.setItem('activeChannel', activeChannel);
   renderChannels();
   renderCart();
