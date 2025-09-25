@@ -408,6 +408,10 @@ justify-content:flex-end; margin-top:20px;">
     let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
     let channels = JSON.parse(localStorage.getItem('channels')) || defaultChannels;
     let activeChannel = localStorage.getItem('activeChannel') || Object.keys(channels)[0] || 'หน้าร้าน';
+    if (!channels[activeChannel]) {
+      activeChannel = Object.keys(channels)[0] || 'หน้าร้าน';
+      saveActiveChannelToLocalStorage();
+    }
 
     let cart = {};
     let confirmButtonRef = null;
