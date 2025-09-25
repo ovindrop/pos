@@ -407,8 +407,10 @@ justify-content:flex-end; margin-top:20px;">
 
     let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
     let channels = JSON.parse(localStorage.getItem('channels')) || defaultChannels;
-    let activeChannel = localStorage.getItem('activeChannel') || Object.keys(channels)[0] || 'หน้าร้าน';
-    if (!channels[activeChannel]) {
+    let activeChannel = localStorage.getItem('activeChannel');
+
+    // เพิ่มการตรวจสอบ activeChannel ทันทีที่โหลด
+    if (activeChannel === null || !channels[activeChannel]) {
       activeChannel = Object.keys(channels)[0] || 'หน้าร้าน';
       saveActiveChannelToLocalStorage();
     }
@@ -486,12 +488,6 @@ justify-content:flex-end; margin-top:20px;">
     function renderChannels() {
       const channelButtons = document.getElementById('channelButtons');
       channelButtons.innerHTML = '';
-      
-      // ตรวจสอบว่า activeChannel ยังมีอยู่ใน channels หรือไม่
-      if (!channels[activeChannel]) {
-        activeChannel = Object.keys(channels)[0] || 'หน้าร้าน';
-        saveActiveChannelToLocalStorage();
-      }
       
       for (const channelName in channels) {
         const button = document.createElement('button');
